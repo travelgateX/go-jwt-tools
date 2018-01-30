@@ -2,19 +2,24 @@ package authorization
 
 import (
 	"fmt"
-	"strings"
 	"net/http"
-    "go-jwt-tools/config"
-	"github.com/gorilla/context"
-	"github.com/dgrijalva/jwt-go"
+	"strings"
+
 	"github.com/auth0/go-jwt-middleware"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/context"
 )
 
-var tokenDummy = "XXX"
+type Config struct {
+	PublicKeyStr     string `json:"publicKeyStr"`
+	AdminGroup       string `json:"admin_group"`
+	IgnoreExpiration bool   `json:"ignore_expiration"`
+}
 
-func Authorize(inner http.Handler, c config.AuthConfigData) http.Handler {
-	config.LoadConfiguration(c)
-	inner = preparePermissions(inner)
+const tokenDummy = "XXX"
+
+func Authorize(inner http.Handler, c Config) http.Handler {
+	inner = preparePermissions(inner, c.AdminGroup)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handler := inner
 		authorizePayload := strings.Split(r.Header.Get("Authorization"), " ")
@@ -23,7 +28,7 @@ func Authorize(inner http.Handler, c config.AuthConfigData) http.Handler {
 		switch authorizeType {
 		case "Bearer":
 			if authorizePayload[1] != tokenDummy {
-				handler = authorizationBearer(inner)
+				handler = authorizationBearer(inner, c.AdminGroup)
 			}
 			handler.ServeHTTP(w, r)
 		default:
@@ -32,16 +37,17 @@ func Authorize(inner http.Handler, c config.AuthConfigData) http.Handler {
 	})
 }
 
-func authorizationBearer(inner http.Handler) http.Handler {
+func authorizationBearer(inner http.Handler, publicKey string) http.Handler {
 	jwt := jwtmiddleware.New(jwtmiddleware.Options{ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 		var result interface{}
-		result, _ = jwt.ParseRSAPublicKeyFromPEM([]byte(config.PublicKeyStr))
+		result, _ = jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
 		return result, nil
-	}, SigningMethod: jwt.SigningMethodRS256,})
+	}, SigningMethod: jwt.SigningMethodRS256})
 	return jwt.Handler(inner)
 }
 
-func preparePermissions(inner http.Handler) http.Handler {
+func preparePermissions(inner http.Handler, adminGroup string) http.Handler {
+	const permissions = "permissions"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizePayload := strings.Split(r.Header.Get("Authorization"), " ")
 		authorizeType := authorizePayload[0]
@@ -53,9 +59,8 @@ func preparePermissions(inner http.Handler) http.Handler {
 				if aux_groups != nil {
 					groups := claims["https://xtg.com/iam"].([]interface{})
 					if len(groups) > 0 {
-						x := NewPermissionTable()
-						x.BuildPermissions(groups)
-						context.Set(r, PERMISSIONS, x)
+						x := NewPermissionTable(groups, adminGroup)
+						context.Set(r, permissions, x)
 						inner.ServeHTTP(w, r)
 					} else {
 						fmt.Fprintln(w, "Your user hasn't got any company.")
