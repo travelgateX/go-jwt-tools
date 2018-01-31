@@ -16,6 +16,12 @@ type Config struct {
 	IgnoreExpiration bool   `json:"ignore_expiration"`
 }
 
+// Define a type in order to make it unique and avoid conflicts
+type key string
+
+// ContextKey contains the key where the PermissionTree will be stored
+const ContextField = key("permission")
+
 const tokenDummy = "XXX"
 
 func Authorize(inner http.Handler, c Config) http.Handler {
@@ -47,7 +53,6 @@ func authorizationBearer(inner http.Handler, publicKey string) http.Handler {
 }
 
 func preparePermissions(inner http.Handler, adminGroup string) http.Handler {
-	const permissions = "permissions"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizePayload := strings.Split(r.Header.Get("Authorization"), " ")
 		authorizeType := authorizePayload[0]
@@ -60,7 +65,7 @@ func preparePermissions(inner http.Handler, adminGroup string) http.Handler {
 					groups := claims["https://xtg.com/iam"].([]interface{})
 					if len(groups) > 0 {
 						x := NewPermissionTable(groups, adminGroup)
-						context.Set(r, permissions, x)
+						context.Set(r, ContextField, x)
 						inner.ServeHTTP(w, r)
 					} else {
 						fmt.Fprintln(w, "Your user hasn't got any company.")

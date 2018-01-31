@@ -9,7 +9,9 @@ There are two important features on this package:
 ## MiddleWare
 ### How to use
 
-We just need to add a call to the function **`Authorize`** on all the calls that must be authorized (in this case, we use a **`Route`** struct that contains the `HandlerFunc` and a `bool` indicating if that `Route` must be authorized). `Authorize` expects the handler function to wrap and a configuration object of type **`AuthConfigData`** (defined on `config.go` file).
+We just need to add a call to the function **`Authorize`** on all the calls that must be authorized (in this case, we use a **`Route`** struct that contains the `HandlerFunc` and a `bool` indicating if that `Route` must be authorized). `Authorize` expects the handler function to wrap and a configuration object of type **`Config`** (defined on `authorization.go` file).
+
+**IMPORTANT**: The middleware stores the `PermissionTable` item on the [context](https://golang.org/pkg/context/), under the key defined on the `ContextKey` constant.
 
 ### Example of use
 
@@ -18,10 +20,11 @@ func NewRouter() *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// Prepare Authorization configuration
-        c := config.AuthConfigData{
+        c := Config{
 		PublicKeyStr: "myKey",
 		AdminGroup: "admin",
 		IgnoreExpiration: false
+		ContextField: "permission"
 	}
 
 	for _, route := range routes {
@@ -47,6 +50,12 @@ func NewRouter() *mux.Router {
 	return router
 }
 ```
+
+After this, out `PermissionTable` will be stored on the `ContextKey` key of the context:
+
+```golang
+permissions := ctx.Value(authorization.ContextKey).(*authorization.PermissionTable)
+``` 
 
 
 ## Permissions
