@@ -20,11 +20,10 @@ func NewRouter() *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// Prepare Authorization configuration
-        c := Config{
+        c := authorization.Config{
 		PublicKeyStr: "myKey",
 		AdminGroup: "admin",
 		IgnoreExpiration: false
-		ContextField: "permission"
 	}
 
 	for _, route := range routes {

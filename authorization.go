@@ -20,7 +20,7 @@ type Config struct {
 type key string
 
 // ContextKey contains the key where the PermissionTree will be stored
-const ContextField = key("permission")
+const ContextKey = key("permission")
 
 const tokenDummy = "XXX"
 
@@ -65,7 +65,7 @@ func preparePermissions(inner http.Handler, adminGroup string) http.Handler {
 					groups := claims["https://xtg.com/iam"].([]interface{})
 					if len(groups) > 0 {
 						x := NewPermissionTable(groups, adminGroup)
-						context.Set(r, ContextField, x)
+						context.Set(r, ContextKey, x)
 						inner.ServeHTTP(w, r)
 					} else {
 						fmt.Fprintln(w, "Your user hasn't got any company.")
