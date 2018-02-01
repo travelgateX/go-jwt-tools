@@ -34,7 +34,7 @@ func Authorize(inner http.Handler, c Config) http.Handler {
 		switch authorizeType {
 		case "Bearer":
 			if authorizePayload[1] != tokenDummy {
-				handler = authorizationBearer(inner, c.AdminGroup)
+				handler = authorizationBearer(inner, c.PublicKeyStr)
 			}
 			handler.ServeHTTP(w, r)
 		default:
