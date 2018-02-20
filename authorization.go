@@ -7,13 +7,14 @@ import (
 
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/context"
+	"context"
 )
 
 type Config struct {
 	PublicKeyStr     string `json:"publicKeyStr"`
 	AdminGroup       string `json:"admin_group"`
 	IgnoreExpiration bool   `json:"ignore_expiration"`
+	TokenDummy		string `json: "tokenDummy"`
 }
 
 // Define a type in order to make it unique and avoid conflicts
@@ -21,19 +22,18 @@ type key string
 
 // ContextKey contains the key where the PermissionTree will be stored
 const ContextKey = key("permission")
-
-const tokenDummy = "XXX"
+const AuthKey = key("authorization")
 
 func Authorize(inner http.Handler, c Config) http.Handler {
-	inner = preparePermissions(inner, c.AdminGroup)
+	inner = preparePermissions(inner, c.AdminGroup, c.TokenDummy)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handler := inner
 		authorizePayload := strings.Split(r.Header.Get("Authorization"), " ")
 		authorizeType := authorizePayload[0]
-		context.Set(r, "authorization", authorizeType)
+		r = r.WithContext(context.WithValue(r.Context(), AuthKey, authorizeType))
 		switch authorizeType {
 		case "Bearer":
-			if authorizePayload[1] != tokenDummy {
+			if authorizePayload[1] != c.TokenDummy {
 				handler = authorizationBearer(inner, c.PublicKeyStr)
 			}
 			handler.ServeHTTP(w, r)
@@ -52,7 +52,7 @@ func authorizationBearer(inner http.Handler, publicKey string) http.Handler {
 	return jwt.Handler(inner)
 }
 
-func preparePermissions(inner http.Handler, adminGroup string) http.Handler {
+func preparePermissions(inner http.Handler, adminGroup, tokenDummy string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizePayload := strings.Split(r.Header.Get("Authorization"), " ")
 		authorizeType := authorizePayload[0]
@@ -65,7 +65,7 @@ func preparePermissions(inner http.Handler, adminGroup string) http.Handler {
 					groups := claims["https://xtg.com/iam"].([]interface{})
 					if len(groups) > 0 {
 						x := NewPermissionTable(groups, adminGroup)
-						context.Set(r, ContextKey, x)
+						r = r.WithContext(context.WithValue(r.Context(), ContextKey, x))
 						inner.ServeHTTP(w, r)
 					} else {
 						fmt.Fprintln(w, "Your user hasn't got any company.")
@@ -74,7 +74,8 @@ func preparePermissions(inner http.Handler, adminGroup string) http.Handler {
 					fmt.Fprintln(w, "Your token doesn't contain any company.")
 				}
 			} else {
-				context.Set(r, "company", "TEST_COMPANY")
+				newctx := context.WithValue(r.Context(), "company", "TEST_COMPANY")
+				r = r.WithContext(newctx)
 				inner.ServeHTTP(w, r)
 			}
 		default:

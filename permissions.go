@@ -13,6 +13,7 @@ const (
 	Update permission = "u"
 	Delete permission = "d"
 	Read   permission = "r"
+	Execute permission = "x"
 )
 
 const GROUP_PERMISSION = "grp"
