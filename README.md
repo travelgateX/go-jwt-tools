@@ -23,8 +23,7 @@ func NewRouter() *mux.Router {
         c := authorization.Config{
 		PublicKeyStr: "myKey",
 		AdminGroup: "admin",
-		IgnoreExpiration: false,
-		TokenDummy: "TokenDummy",
+		IgnoreExpiration: false
 	}
 
 	for _, route := range routes {
