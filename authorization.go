@@ -83,3 +83,9 @@ func preparePermissions(inner http.Handler, adminGroup, tokenDummy string) http.
 		}
 	})
 }
+
+// PermissionTableFromContext returns the permissionTable stored in a context
+func PermissionTableFromContext(ctx context.Context)(*PermissionTable, bool){
+	val, ok := ctx.Value(ContextKey).(*PermissionTable)
+	return val, ok
+}
