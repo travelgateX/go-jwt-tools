@@ -18,21 +18,27 @@ const (
 
 const GROUP_PERMISSION = "grp"
 
+type GroupTree struct {
+	Type   string               // Group type
+	Groups map[string]GroupTree // Group hierarchy tree
+}
+
 type PermissionTable struct {
 	Permissions           map[string]map[string]map[permission]map[string]bool //Product-->object-->Permission-->Groups
 	IsAdmin               bool
-	GroupTree             map[string]interface{}                    // Group hierarchy tree
+	Jwt                   interface{}
+	Groups                map[string]GroupTree                      // Group hierarchy tree
 	AdditionalPermissions map[string]map[string]map[string]struct{} // Structure contaiing the additional permissions indexed by group code
 }
 
 func NewPermissionTable(jwt interface{}, adminGroup string) *PermissionTable {
-	pt := &PermissionTable{Permissions: make(map[string]map[string]map[permission]map[string]bool), IsAdmin: false}
-	buildPermissions(pt, jwt, &(map[string]interface{}{}), adminGroup)
+	pt := &PermissionTable{Permissions: make(map[string]map[string]map[permission]map[string]bool), IsAdmin: false, Jwt: jwt}
+	buildPermissions(pt, jwt, &map[string]GroupTree{}, adminGroup)
 	return pt
 }
 
-/// Recursive call for the jwt traversal
-func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]interface{}, adminGroup string) {
+// Recursive call for the jwt traversal
+func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]GroupTree, adminGroup string) {
 	ok := true
 	var groups []interface{}
 
@@ -44,6 +50,7 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]inte
 	// Iterate through each group to gather its information
 	for _, grp := range groups {
 		var group string
+		var typ string
 		var x map[string]interface{}
 		var objects map[string]interface{}
 
@@ -57,8 +64,11 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]inte
 			return
 		}
 
-		// Add group to tree
-		(*tree)[group] = map[string]interface{}{}
+		if typ, ok = x[TYPE].(string); !ok {
+			return
+		}
+
+		(*tree)[group] = GroupTree{Groups: map[string]GroupTree{}, Type: typ}
 
 		// Add Additional permissions
 		if x[ADDITIONAL] != nil {
@@ -95,16 +105,16 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]inte
 		}
 
 		// Set this group tree and pass it to the recursive call that will traverse child groups
-		groupTree := (*tree)[group].(map[string]interface{})
-		buildPermissions(t, x[GROUPS], &groupTree, adminGroup)
+		groupTree := (*tree)[group]
+		buildPermissions(t, x[GROUPS], &groupTree.Groups, adminGroup)
 	}
 
-	t.GroupTree = *tree
+	t.Groups = *tree
 	return
 }
 
-/// Checks the user permissions for a specified product and object
-/// Returns: Special permissions that apply (can be filtered with "args" parameter)
+// Checks the user permissions for a specified product and object
+// Returns: Special permissions that apply (can be filtered with "args" parameter)
 func (t *PermissionTable) CheckPermission(product string, object string, per permission, specials ...string) ([]string, bool) {
 	// If user is admin, return true
 	if t.IsAdmin {
@@ -232,7 +242,7 @@ func getObjects(v interface{}, group string, p map[permission]map[string]bool, a
 	return p, isAdmin
 }
 
-//Return all the groups that have a permissions into an object
+// Return all the groups that have a permissions into an object
 func (t *PermissionTable) ValidGroups(product string, object string, per permission) map[string]bool {
 	if p, ok := t.Permissions[product]; ok {
 		if o, ok := p[object]; ok {
@@ -262,14 +272,37 @@ func (t *PermissionTable) GetAllGroups() map[string]struct{} {
 	return ret
 }
 
-// Returns all the parents of a given group
-func (t *PermissionTable) GetParents(group string) map[string]interface{} {
+// Returns all groups of a given type
+func (t *PermissionTable) GetGroups(groupType string) []string {
 	// Call to recursive traverse function
-	tree, _ := getParents(group, t.GroupTree)
+	var groups []string
+	tree := getGroups(groupType, t.Groups, groups)
 	return tree
 }
 
-func getParents(group string, tree map[string]interface{}) (map[string]interface{}, bool) {
+func getGroups(groupType string, tree map[string]GroupTree, resultGroups []string) []string {
+	// Iterate through all the groups on that node
+	for groupName, childs := range tree {
+		// If this is the type we are lokking for, save this group
+		if childs.Type == groupType {
+			resultGroups = append(resultGroups, groupName)
+		}
+		// If group has childs, analyze them
+		if childs.Groups != nil {
+			resultGroups = getGroups(groupType, childs.Groups, resultGroups)
+		}
+	}
+	return resultGroups
+}
+
+// Returns all the parents of a given group
+func (t *PermissionTable) GetParents(group string) map[string]interface{} {
+	// Call to recursive traverse function
+	tree, _ := getParents(group, t.Groups)
+	return tree
+}
+
+func getParents(group string, tree map[string]GroupTree) (map[string]interface{}, bool) {
 	foundOnChilds := false // If group found on childs, this branch is valid
 	generationTree := map[string]interface{}{}
 
@@ -279,8 +312,8 @@ func getParents(group string, tree map[string]interface{}) (map[string]interface
 		childTree := map[string]interface{}{}
 
 		// If group has childs, analyze them
-		if childs != nil {
-			childTree, found = getParents(group, childs.(map[string]interface{}))
+		if childs.Groups != nil {
+			childTree, found = getParents(group, childs.Groups)
 		}
 
 		// If this is the group that we are looking for, set found flag as true and return
