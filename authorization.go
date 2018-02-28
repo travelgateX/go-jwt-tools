@@ -54,17 +54,18 @@ func authorizationBearer(inner http.Handler, publicKey string) http.Handler {
 
 func preparePermissions(inner http.Handler, adminGroup, tokenDummy string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorizePayload := strings.Split(r.Header.Get("Authorization"), " ")
-		authorizeType := authorizePayload[0]
+		authorizePayload := r.Header.Get("Authorization")
+		authorizeSplit:= strings.Split(authorizePayload," ")
+		authorizeType := authorizeSplit[0]
 		switch authorizeType {
 		case "Bearer":
-			if authorizePayload[1] != tokenDummy {
+			if authorizeSplit[1] != tokenDummy {
 				claims := r.Context().Value("user").(*jwt.Token).Claims.(jwt.MapClaims)
 				aux_groups := claims["https://xtg.com/iam"]
 				if aux_groups != nil {
 					groups := claims["https://xtg.com/iam"].([]interface{})
 					if len(groups) > 0 {
-						x := NewPermissionTable(groups, adminGroup)
+						x := NewPermissionTable(groups,authorizePayload ,adminGroup)
 						r = r.WithContext(context.WithValue(r.Context(), ContextKey, x))
 						inner.ServeHTTP(w, r)
 					} else {

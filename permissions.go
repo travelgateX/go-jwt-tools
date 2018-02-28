@@ -26,13 +26,13 @@ type GroupTree struct {
 type PermissionTable struct {
 	Permissions           map[string]map[string]map[permission]map[string]bool //Product-->object-->Permission-->Groups
 	IsAdmin               bool
-	Jwt                   interface{}
+	Bearer				  string
 	Groups                map[string]GroupTree                      // Group hierarchy tree
 	AdditionalPermissions map[string]map[string]map[string]struct{} // Structure contaiing the additional permissions indexed by group code
 }
 
-func NewPermissionTable(jwt interface{}, adminGroup string) *PermissionTable {
-	pt := &PermissionTable{Permissions: make(map[string]map[string]map[permission]map[string]bool), IsAdmin: false, Jwt: jwt}
+func NewPermissionTable(jwt interface{}, bearer, adminGroup string) *PermissionTable {
+	pt := &PermissionTable{Permissions: make(map[string]map[string]map[permission]map[string]bool), IsAdmin: false, Bearer:bearer}
 	buildPermissions(pt, jwt, &map[string]GroupTree{}, adminGroup)
 	return pt
 }
