@@ -27,12 +27,15 @@ type PermissionTable struct {
 	Permissions           map[string]map[string]map[permission]map[string]bool //Product-->object-->Permission-->Groups
 	IsAdmin               bool
 	Bearer				  string
-	Groups                map[string]GroupTree                      // Group hierarchy tree
-	AdditionalPermissions map[string]map[string]map[string]struct{} // Structure contaiing the additional permissions indexed by group code
+	Groups                map[string]GroupTree                                 // Group hierarchy tree
+	AdditionalPermissions map[string]map[string]map[string]map[string]struct{} // Structure containig the additional permissions indexed by group code
 }
 
 func NewPermissionTable(jwt interface{}, bearer, adminGroup string) *PermissionTable {
-	pt := &PermissionTable{Permissions: make(map[string]map[string]map[permission]map[string]bool), IsAdmin: false, Bearer:bearer}
+	pt := &PermissionTable{
+		Permissions: make(map[string]map[string]map[permission]map[string]bool),
+		AdditionalPermissions: make(map[string]map[string]map[string]map[string]struct{}),
+		IsAdmin: false}
 	buildPermissions(pt, jwt, &map[string]GroupTree{}, adminGroup)
 	return pt
 }
@@ -72,12 +75,20 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 
 		// Add Additional permissions
 		if x[ADDITIONAL] != nil {
-			if _, ok := t.AdditionalPermissions[group]; ok {
-				t.AdditionalPermissions[group] = map[string]map[string]struct{}{}
+			if _, ok := t.AdditionalPermissions[group]; !ok {
+				t.AdditionalPermissions[group] = map[string]map[string]map[string]struct{}{}
 			}
-			for name, permissions := range x[ADDITIONAL].(map[string]string) {
-				for _, permission := range extractPermissions(permissions) {
-					t.AdditionalPermissions[group][name][string(permission)] = struct{}{}
+			for additionalGroupName, additionalGroup := range x[ADDITIONAL].(map[string]interface{}) {
+				if _, ok := t.AdditionalPermissions[group][additionalGroupName]; !ok {
+					t.AdditionalPermissions[group][additionalGroupName] = map[string]map[string]struct{}{}
+				}
+				for rsrc, permissions := range additionalGroup.(map[string]interface{}) {
+					if _, ok := t.AdditionalPermissions[group][additionalGroupName][rsrc]; !ok {
+						t.AdditionalPermissions[group][additionalGroupName][rsrc] = map[string]struct{}{}
+					}						
+					for _, permission := range extractPermissions(permissions.([]interface{})[0].(string)) {
+						t.AdditionalPermissions[group][additionalGroupName][rsrc][string(permission)] = struct{}{}
+					}
 				}
 			}
 		}
