@@ -63,8 +63,6 @@ func preparePermissions(inner http.Handler, c Config) http.Handler {
 		case "Bearer":
 			if authorizeSplit[1] != c.DummyToken {
 				claims := r.Context().Value("user").(*jwt.Token).Claims.(jwt.MapClaims)
-				fmt.Println(c.GroupsClaim)
-				fmt.Println(c.MemberIDClaim)
 				aux_groups := claims[c.GroupsClaim]
 				var memberId string
 				if claims[c.MemberIDClaim] == nil { memberId = claims[c.MemberIDClaim].(string) }
