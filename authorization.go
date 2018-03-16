@@ -11,10 +11,12 @@ import (
 )
 
 type Config struct {
-	PublicKeyStr     string `json:"publicKeyStr"`
+	PublicKeyStr     string `json:"public_key_str"`
 	AdminGroup       string `json:"admin_group"`
+	MemberIDClaim	 string `json:"member_id_claim"`
+	GroupsClaim		 string `json:"groups_claim"`
+	DummyToken		 string `json:"dummy_token"`
 	IgnoreExpiration bool   `json:"ignore_expiration"`
-	TokenDummy		string `json: "tokenDummy"`
 }
 
 // Define a type in order to make it unique and avoid conflicts
@@ -25,7 +27,7 @@ const ContextKey = key("permission")
 const AuthKey = key("authorization")
 
 func Authorize(inner http.Handler, c Config) http.Handler {
-	inner = preparePermissions(inner, c.AdminGroup, c.TokenDummy)
+	inner = preparePermissions(inner, c)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handler := inner
 		authorizePayload := strings.Split(r.Header.Get("Authorization"), " ")
@@ -33,7 +35,7 @@ func Authorize(inner http.Handler, c Config) http.Handler {
 		r = r.WithContext(context.WithValue(r.Context(), AuthKey, authorizeType))
 		switch authorizeType {
 		case "Bearer":
-			if authorizePayload[1] != c.TokenDummy {
+			if authorizePayload[1] != c.DummyToken {
 				handler = authorizationBearer(inner, c.PublicKeyStr)
 			}
 			handler.ServeHTTP(w, r)
@@ -52,30 +54,34 @@ func authorizationBearer(inner http.Handler, publicKey string) http.Handler {
 	return jwt.Handler(inner)
 }
 
-func preparePermissions(inner http.Handler, adminGroup, tokenDummy string) http.Handler {
+func preparePermissions(inner http.Handler, c Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizePayload := r.Header.Get("Authorization")
 		authorizeSplit:= strings.Split(authorizePayload," ")
 		authorizeType := authorizeSplit[0]
 		switch authorizeType {
 		case "Bearer":
-			if authorizeSplit[1] != tokenDummy {
+			if authorizeSplit[1] != c.DummyToken {
 				claims := r.Context().Value("user").(*jwt.Token).Claims.(jwt.MapClaims)
-				aux_groups := claims["https://xtg.com/iam"]
+				fmt.Println(c.GroupsClaim)
+				fmt.Println(c.MemberIDClaim)
+				aux_groups := claims[c.GroupsClaim]
+				var memberId string
+				if claims[c.MemberIDClaim] == nil { memberId = claims[c.MemberIDClaim].(string) }
 				if aux_groups != nil {
-					groups := claims["https://xtg.com/iam"].([]interface{})
+					groups := claims[c.GroupsClaim].([]interface{})
 					if len(groups) > 0 {
-						x := NewPermissionTable(groups,authorizePayload ,adminGroup)
+						x := NewPermissionTable(groups, memberId, authorizePayload, c.AdminGroup)
 						r = r.WithContext(context.WithValue(r.Context(), ContextKey, x))
 						inner.ServeHTTP(w, r)
 					} else {
-						fmt.Fprintln(w, "Your user hasn't got any company.")
+						fmt.Fprintln(w, "Your user hasn't got any group.")
 					}
 				} else {
-					fmt.Fprintln(w, "Your token doesn't contain any company.")
+					fmt.Fprintln(w, "Your token doesn't contain any group.")
 				}
 			} else {
-				newctx := context.WithValue(r.Context(), "company", "TEST_COMPANY")
+				newctx := context.WithValue(r.Context(), "group", "TEST_GROUP")
 				r = r.WithContext(newctx)
 				inner.ServeHTTP(w, r)
 			}
