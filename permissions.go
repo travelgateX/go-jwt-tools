@@ -83,7 +83,8 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 
 		//Check the products
 		if apis, ok := x[PRODUCTS].(map[string]interface{}); ok {
-			fillPermissionsfromProducts(apis, &t.Permissions, group, adminGroup)
+			isAdmin := fillPermissionsfromProducts(apis, &t.Permissions, group, adminGroup)
+			if isAdmin { t.IsAdmin = true }
 		}
 
 		// Set this group tree and pass it to the recursive call that will traverse child groups
@@ -268,9 +269,9 @@ func getObjects(v interface{}, group string, p map[permission]map[string]struct{
 		// If Admin group and all permissions on it => User is admin
 		if group == adminGroup && o["c"] != nil && o["r"] != nil && o["u"] != nil && o["d"] != nil {
 			_, c := o["c"][adminGroup]
-			_, r := o["c"][adminGroup]
-			_, u := o["c"][adminGroup]
-			_, d := o["c"][adminGroup]
+			_, r := o["r"][adminGroup]
+			_, u := o["u"][adminGroup]
+			_, d := o["d"][adminGroup]
 			if c && r && u && d {
 				isAdmin = true
 			}
