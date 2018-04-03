@@ -51,53 +51,51 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 	for _, g := range groups {
 		var grps []interface{}
 
-		if grps, ok = g.([]interface{}); !ok {
-			return
-		}
+		if grps, ok = g.([]interface{}); ok {
+			for _, grp := range grps {
+				var group string
+				var typ string
+				var x map[string]interface{}
 
-		for _, grp := range grps {
-			var group string
-			var typ string
-			var x map[string]interface{}
+				//Check if the token is not null
+				if x, ok = grp.(map[string]interface{}); !ok {
+					return
+				}
 
-			//Check if the token is not null
-			if x, ok = grp.(map[string]interface{}); !ok {
-				return
-			}
+				//The group never should be null
+				if group, ok = x[GROUP].(string); !ok {
+					return
+				}
 
-			//The group never should be null
-			if group, ok = x[GROUP].(string); !ok {
-				return
-			}
+				if typ, ok = x[TYPE].(string); !ok {
+					return
+				}
 
-			if typ, ok = x[TYPE].(string); !ok {
-				return
-			}
+				(*tree)[group] = GroupTree{Groups: map[string]GroupTree{}, Type: typ}
 
-			(*tree)[group] = GroupTree{Groups: map[string]GroupTree{}, Type: typ}
-
-			// Add Additional permissions
-			if groups, ok := x[ADDITIONAL].(map[string]interface{}); ok {
-				// Iterate through groups
-				for aGroup, products := range groups {
-					if prods, ok := products.(map[string]interface{}); ok {
-						// Iterate through products of the group
-						fillPermissionsfromProducts(prods, &t.Permissions, aGroup, adminGroup)
+				// Add Additional permissions
+				if groups, ok := x[ADDITIONAL].(map[string]interface{}); ok {
+					// Iterate through groups
+					for aGroup, products := range groups {
+						if prods, ok := products.(map[string]interface{}); ok {
+							// Iterate through products of the group
+							fillPermissionsfromProducts(prods, &t.Permissions, aGroup, adminGroup)
+						}
 					}
 				}
-			}
 
-			//Check the products
-			if apis, ok := x[PRODUCTS].(map[string]interface{}); ok {
-				isAdmin := fillPermissionsfromProducts(apis, &t.Permissions, group, adminGroup)
-				if isAdmin {
-					t.IsAdmin = true
+				//Check the products
+				if apis, ok := x[PRODUCTS].(map[string]interface{}); ok {
+					isAdmin := fillPermissionsfromProducts(apis, &t.Permissions, group, adminGroup)
+					if isAdmin {
+						t.IsAdmin = true
+					}
 				}
-			}
 
-			// Set this group tree and pass it to the recursive call that will traverse child groups
-			groupTree := (*tree)[group]
-			buildPermissions(t, x[GROUPS], &groupTree.Groups, adminGroup)
+				// Set this group tree and pass it to the recursive call that will traverse child groups
+				groupTree := (*tree)[group]
+				buildPermissions(t, x[GROUPS], &groupTree.Groups, adminGroup)
+			}
 		}
 	}
 
