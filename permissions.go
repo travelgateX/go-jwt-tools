@@ -40,25 +40,23 @@ func NewPermissionTable(jwt interface{}, memberId []string, bearer string, admin
 // Recursive call for the jwt traversal
 func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]GroupTree, adminGroup string) {
 	ok := true
-	var groups []interface{}
+	var permission []interface{}
 
 	// If jwt not in correct format, return null
-	if groups, ok = jwt.([]interface{}); !ok {
+	if permission, ok = jwt.([]interface{}); !ok {
 		return
 	}
-
 	// Iterate through each group to gather its information
-	for _, g := range groups {
-		var grps []interface{}
-
-		if grps, ok = g.([]interface{}); ok {
-			for _, grp := range grps {
+	for _, p := range permission {
+		var groups []interface{}
+		if groups, ok = p.([]interface{}); ok {
+			for _, g := range groups {
 				var group string
 				var typ string
 				var x map[string]interface{}
 
 				//Check if the token is not null
-				if x, ok = grp.(map[string]interface{}); !ok {
+				if x, ok = g.(map[string]interface{}); !ok {
 					return
 				}
 
@@ -94,7 +92,9 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 
 				// Set this group tree and pass it to the recursive call that will traverse child groups
 				groupTree := (*tree)[group]
-				buildPermissions(t, x[GROUPS], &groupTree.Groups, adminGroup)
+				var aux []interface{}
+				aux = append(aux, x[GROUPS])
+				buildPermissions(t, aux, &groupTree.Groups, adminGroup)
 			}
 		}
 	}
