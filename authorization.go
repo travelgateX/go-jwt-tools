@@ -5,17 +5,19 @@ import (
 	"net/http"
 	"strings"
 
+	"context"
+
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
-	"context"
 )
 
+// Config :
 type Config struct {
 	PublicKeyStr     string `json:"public_key_str"`
 	AdminGroup       string `json:"admin_group"`
-	MemberIDClaim	 string `json:"member_id_claim"`
-	GroupsClaim		 string `json:"groups_claim"`
-	DummyToken		 string `json:"dummy_token"`
+	MemberIDClaim    string `json:"member_id_claim"`
+	GroupsClaim      string `json:"groups_claim"`
+	DummyToken       string `json:"dummy_token"`
 	IgnoreExpiration bool   `json:"ignore_expiration"`
 }
 
@@ -24,8 +26,11 @@ type key string
 
 // ContextKey contains the key where the PermissionTree will be stored
 const ContextKey = key("permission")
+
+// AuthKey :
 const AuthKey = key("authorization")
 
+// Authorize :
 func Authorize(inner http.Handler, c Config) http.Handler {
 	inner = preparePermissions(inner, c)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +62,7 @@ func authorizationBearer(inner http.Handler, publicKey string) http.Handler {
 func preparePermissions(inner http.Handler, c Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizePayload := r.Header.Get("Authorization")
-		authorizeSplit:= strings.Split(authorizePayload," ")
+		authorizeSplit := strings.Split(authorizePayload, " ")
 		authorizeType := authorizeSplit[0]
 		switch authorizeType {
 		case "Bearer":
@@ -65,7 +70,9 @@ func preparePermissions(inner http.Handler, c Config) http.Handler {
 				claims := r.Context().Value("user").(*jwt.Token).Claims.(jwt.MapClaims)
 				aux_groups := claims[c.GroupsClaim]
 				var memberId string
-				if claims[c.MemberIDClaim] == nil { memberId = claims[c.MemberIDClaim].(string) }
+				if claims[c.MemberIDClaim] == nil {
+					memberId = claims[c.MemberIDClaim].(string)
+				}
 				if aux_groups != nil {
 					groups := claims[c.GroupsClaim].([]interface{})
 					if len(groups) > 0 {
@@ -90,7 +97,7 @@ func preparePermissions(inner http.Handler, c Config) http.Handler {
 }
 
 // PermissionTableFromContext returns the permissionTable stored in a context
-func PermissionTableFromContext(ctx context.Context)(*PermissionTable, bool){
+func PermissionTableFromContext(ctx context.Context) (*PermissionTable, bool) {
 	val, ok := ctx.Value(ContextKey).(*PermissionTable)
 	return val, ok
 }
