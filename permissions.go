@@ -167,7 +167,7 @@ func extractPermissions(p string) []permission {
 		case 49: //1
 			enabled = true
 		default:
-			other = append(out, permission(string(s)))
+			other = append(other, permission(string(s)))
 		}
 
 	}
