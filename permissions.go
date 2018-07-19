@@ -1,6 +1,5 @@
 package authorization
 
-
 const GROUP = "c"
 const PRODUCTS = "p"
 const GROUPS = "g"
@@ -10,10 +9,10 @@ const TYPE = "t"
 type permission string
 
 const (
-	Create permission = "c"
-	Update permission = "u"
-	Delete permission = "d"
-	Read   permission = "r"
+	Create  permission = "c"
+	Update  permission = "u"
+	Delete  permission = "d"
+	Read    permission = "r"
 	Execute permission = "x"
 )
 
@@ -25,15 +24,15 @@ type GroupTree struct {
 }
 
 type PermissionTable struct {
-	Permissions           map[string]map[string]map[permission]map[string]struct{} //Product-->object-->Permission-->Groups
-	IsAdmin               bool
-	Bearer				  string
-	Groups                map[string]GroupTree                                     // Group hierarchy tree
-	MemberID              string                                                   // Member identifier
+	Permissions map[string]map[string]map[permission]map[string]struct{} //Product-->object-->Permission-->Groups
+	IsAdmin     bool
+	Bearer      string
+	Groups      map[string]GroupTree // Group hierarchy tree
+	MemberID    string               // Member identifier
 }
 
 func NewPermissionTable(jwt interface{}, memberId string, bearer string, adminGroup string) *PermissionTable {
-	pt := &PermissionTable{	Permissions: make(map[string]map[string]map[permission]map[string]struct{}), IsAdmin: false, Bearer: bearer, MemberID: memberId }
+	pt := &PermissionTable{Permissions: make(map[string]map[string]map[permission]map[string]struct{}), IsAdmin: false, Bearer: bearer, MemberID: memberId}
 	buildPermissions(pt, jwt, &map[string]GroupTree{}, adminGroup)
 	return pt
 }
@@ -84,7 +83,9 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 		//Check the products
 		if apis, ok := x[PRODUCTS].(map[string]interface{}); ok {
 			isAdmin := fillPermissionsfromProducts(apis, &t.Permissions, group, adminGroup)
-			if isAdmin { t.IsAdmin = true }
+			if isAdmin {
+				t.IsAdmin = true
+			}
 		}
 
 		// Set this group tree and pass it to the recursive call that will traverse child groups
@@ -160,7 +161,7 @@ func extractPermissions(p string) []permission {
 		case 49: //1
 			enabled = true
 		default:
-			other = append(out, permission(string(s)))
+			other = append(other, permission(string(s)))
 		}
 
 	}
@@ -220,7 +221,7 @@ func (t *PermissionTable) GetAllGroups() map[string]struct{} {
 // Returns a map indexed by group types, containing the list of groups of that type
 func (t *PermissionTable) GetGroupsByTypes() map[string][]string {
 	ret := map[string][]string{}
-	processingQueue := []map[string]GroupTree { t.Groups }
+	processingQueue := []map[string]GroupTree{t.Groups}
 	for len(processingQueue) > 0 {
 		gTree := processingQueue[0]
 		processingQueue = processingQueue[1:]
@@ -232,7 +233,7 @@ func (t *PermissionTable) GetGroupsByTypes() map[string][]string {
 			processingQueue = append(processingQueue, gTree.Groups)
 		}
 	}
-	return ret 
+	return ret
 }
 
 // Returns all groups of a given type
@@ -281,7 +282,7 @@ func getObjects(v interface{}, group string, p map[permission]map[string]struct{
 	return p, isAdmin
 }
 
-func fillPermissionsfromProducts(products map[string]interface{}, permissions *map[string]map[string]map[permission]map[string]struct{}, group string, adminGroup string) (bool){
+func fillPermissionsfromProducts(products map[string]interface{}, permissions *map[string]map[string]map[permission]map[string]struct{}, group string, adminGroup string) bool {
 	ret := false
 	for product, objects := range products {
 		if (*permissions)[product] == nil {
@@ -293,7 +294,9 @@ func fillPermissionsfromProducts(products map[string]interface{}, permissions *m
 			for object, perms := range objs {
 				isAdmin := false
 				p[object], isAdmin = getObjects(perms, group, p[object], adminGroup) // Get permissions of the object
-				if isAdmin { ret = true }
+				if isAdmin {
+					ret = true
+				}
 			}
 		}
 	}
