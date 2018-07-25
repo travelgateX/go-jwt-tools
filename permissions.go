@@ -107,9 +107,10 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 // Returns: Groups that have the requested permissions
 func (t *PermissionTable) CheckPermission(product string, object string, per permission, groups ...string) ([]string, bool) {
 	// If user is admin, return true
-	if t.IsAdmin {
-		return nil, true
-	}
+	// Admin concept deprecated
+	// if t.IsAdmin {
+	// 	return nil, true
+	// }
 
 	// If user has permissions for the desired product and object return them
 	if t.Permissions[product] != nil && t.Permissions[product][object] != nil && t.Permissions[product][object][per] != nil {
