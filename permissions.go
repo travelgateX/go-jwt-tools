@@ -121,6 +121,8 @@ func (t *PermissionTable) CheckPermission(product string, object string, per per
 			for _, gp := range groups {
 				if _, ok := t.Permissions[product][object][per][gp]; ok {
 					l = append(l, gp)
+				} else if _, ok := t.Permissions[product][object][per]["all"]; ok {
+					l = append(l, "all")
 				}
 			}
 		} else {
