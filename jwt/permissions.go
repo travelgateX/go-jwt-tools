@@ -17,16 +17,16 @@ type GroupTree struct {
 	Groups map[string]GroupTree // Group hierarchy tree
 }
 
-var _ auth.Permissions = (*Permissions)(nil)
+var _ authorization.Permissions = (*Permissions)(nil)
 
 type Permissions struct {
-	Permissions map[string]map[string]map[auth.Permission]map[string]struct{} //Product-->object-->Permission-->Groups
+	Permissions map[string]map[string]map[authorization.Permission]map[string]struct{} //Product-->object-->Permission-->Groups
 	Groups      []map[string]GroupTree                                        // Group hierarchy tree
 	MemberID    []string                                                      // Member identifier
 }
 
 func NewPermissions(jwt interface{}, memberId []string, adminGroup string) *Permissions {
-	pt := &Permissions{Permissions: make(map[string]map[string]map[auth.Permission]map[string]struct{}), MemberID: memberId}
+	pt := &Permissions{Permissions: make(map[string]map[string]map[authorization.Permission]map[string]struct{}), MemberID: memberId}
 	buildPermissions(pt, jwt, &map[string]GroupTree{}, adminGroup)
 	return pt
 }
@@ -96,7 +96,7 @@ func buildPermissions(t *Permissions, jwt interface{}, tree *map[string]GroupTre
 
 // Checks the user permissions for a specified product and object
 // Returns: Groups that have the requested permissions
-func (t *Permissions) CheckPermission(product string, object string, per auth.Permission, groups ...string) ([]string, bool) {
+func (t *Permissions) CheckPermission(product string, object string, per authorization.Permission, groups ...string) ([]string, bool) {
 	// If user has permissions for the desired product and object return them
 	if t.Permissions[product] != nil && t.Permissions[product][object] != nil && t.Permissions[product][object][per] != nil {
 		l := make([]string, 0, len(groups))
@@ -126,8 +126,8 @@ func (t *Permissions) CheckPermission(product string, object string, per auth.Pe
 	return nil, false
 }
 
-func extractPermissions(p string) []auth.Permission {
-	var out []auth.Permission
+func extractPermissions(p string) []authorization.Permission {
+	var out []authorization.Permission
 
 	//Permission flags
 	update := false
@@ -136,7 +136,7 @@ func extractPermissions(p string) []auth.Permission {
 	read := false
 
 	enabled := false
-	other := []auth.Permission{}
+	other := []authorization.Permission{}
 
 	// Iterate through permission string.
 	// It will be of the form [c][r][u][d](0|1)[(aA1-9)*]
@@ -155,7 +155,7 @@ func extractPermissions(p string) []auth.Permission {
 		case 49: //1
 			enabled = true
 		default:
-			other = append(other, auth.Permission(string(s)))
+			other = append(other, authorization.Permission(string(s)))
 		}
 
 	}
@@ -163,16 +163,16 @@ func extractPermissions(p string) []auth.Permission {
 	// Append every charater
 	if enabled {
 		if create {
-			out = append(out, auth.Create)
+			out = append(out, authorization.Create)
 		}
 		if read {
-			out = append(out, auth.Read)
+			out = append(out, authorization.Read)
 		}
 		if update {
-			out = append(out, auth.Update)
+			out = append(out, authorization.Update)
 		}
 		if delete {
-			out = append(out, auth.Delete)
+			out = append(out, authorization.Delete)
 		}
 	}
 
@@ -185,7 +185,7 @@ func extractPermissions(p string) []auth.Permission {
 }
 
 // Return all the groups that have a permissions into an object
-func (t *Permissions) ValidGroups(product string, object string, per auth.Permission) map[string]struct{} {
+func (t *Permissions) ValidGroups(product string, object string, per authorization.Permission) map[string]struct{} {
 	if p, ok := t.Permissions[product]; ok {
 		if o, ok := p[object]; ok {
 			if perm, ok := o[per]; ok {
@@ -243,10 +243,10 @@ func (t *Permissions) GetGroups(groupType string) []string {
 	return tree
 }
 
-func getObjects(v interface{}, group string, p map[auth.Permission]map[string]struct{}, adminGroup string) map[auth.Permission]map[string]struct{} {
+func getObjects(v interface{}, group string, p map[authorization.Permission]map[string]struct{}, adminGroup string) map[authorization.Permission]map[string]struct{} {
 	// Register objects of the api
 	if p == nil {
-		p = make(map[auth.Permission]map[string]struct{})
+		p = make(map[authorization.Permission]map[string]struct{})
 	}
 	o := p
 
@@ -268,10 +268,10 @@ func getObjects(v interface{}, group string, p map[auth.Permission]map[string]st
 	return p
 }
 
-func fillPermissionsfromProducts(products map[string]interface{}, permissions *map[string]map[string]map[auth.Permission]map[string]struct{}, group string, adminGroup string) {
+func fillPermissionsfromProducts(products map[string]interface{}, permissions *map[string]map[string]map[authorization.Permission]map[string]struct{}, group string, adminGroup string) {
 	for product, objects := range products {
 		if (*permissions)[product] == nil {
-			(*permissions)[product] = map[string]map[auth.Permission]map[string]struct{}{}
+			(*permissions)[product] = map[string]map[authorization.Permission]map[string]struct{}{}
 		}
 		p := (*permissions)[product]
 		if objs, ok := objects.(map[string]interface{}); ok {

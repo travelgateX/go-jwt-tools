@@ -8,7 +8,7 @@ import (
 	"github.com/travelgateX/go-jwt-tools"
 )
 
-var _ auth.Parser = (*Parser)(nil)
+var _ authorization.Parser = (*Parser)(nil)
 
 type Parser struct {
 	ParserConfig
@@ -38,23 +38,23 @@ func NewParser(p ParserConfig) *Parser {
 	}
 }
 
-func (p *Parser) Parse(authHeader string) (*auth.User, error) {
+func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) {
 	// validate bearer
-	authHeaderParts := strings.SplitN(authHeader, " ", 2)
-	if len(authHeaderParts) != 2 || authHeaderParts[0] != "Bearer" {
-		return nil, fmt.Errorf("Authorization header format must be Bearer {token}")
+	authorizationHeaderParts := strings.SplitN(authorizationHeader, " ", 2)
+	if len(authorizationHeaderParts) != 2 || authorizationHeaderParts[0] != "Bearer" {
+		return nil, fmt.Errorf("authorizationorization header format must be Bearer {token}")
 	}
 	// dummy treatment
-	if p.DummyToken != "" && authHeaderParts[1] == p.DummyToken {
-		return &auth.User{
-			AuthorizationValue: authHeader,
+	if p.DummyToken != "" && authorizationHeaderParts[1] == p.DummyToken {
+		return &authorization.User{
+			authorizationorizationValue: authorizationHeader,
 			IsDummy:            true,
 			Permissions:        nil, // TODO: NoopImpl?
 		}, nil
 	}
 	// parse token
 	jwtp := &jwt.Parser{SkipClaimsValidation: p.IgnoreExpiration}
-	token, err := jwtp.Parse(authHeaderParts[1], p.KeyFunc)
+	token, err := jwtp.Parse(authorizationHeaderParts[1], p.KeyFunc)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing bearer: %v", err)
 	}
@@ -66,12 +66,12 @@ func (p *Parser) Parse(authHeader string) (*auth.User, error) {
 	}
 	// check if the parsed token is valid...
 	if !token.Valid {
-		return nil, auth.ErrInvalidUser
+		return nil, authorization.ErrInvalidUser
 	}
 	return p.createUser(token)
 }
 
-func (p *Parser) createUser(token *jwt.Token) (*auth.User, error) {
+func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	claimsMap := token.Claims.(jwt.MapClaims)
 	// TODO: remove when migration finishes
 	groups := make([]interface{}, 0, len(p.GroupsClaim))
@@ -91,8 +91,8 @@ func (p *Parser) createUser(token *jwt.Token) (*auth.User, error) {
 			}
 		}
 	}
-	return &auth.User{
-		AuthorizationValue: "Bearer " + token.Raw,
+	return &authorization.User{
+		authorizationorizationValue: "Bearer " + token.Raw,
 		IsDummy:            false,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
 	}, nil

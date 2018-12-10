@@ -6,17 +6,8 @@ const GROUPS = "g"
 const ADDITIONAL = "a"
 const TYPE = "t"
 
-type permission string
 
-const (
-	Create  permission = "c"
-	Update  permission = "u"
-	Delete  permission = "d"
-	Read    permission = "r"
-	Execute permission = "x"
-)
-
-const GROUP_PERMISSION = "grp"
+const GROUP_Permission = "grp"
 
 type GroupTree struct {
 	Type   string               // Group type
@@ -24,7 +15,7 @@ type GroupTree struct {
 }
 
 type PermissionTable struct {
-	Permissions map[string]map[string]map[permission]map[string]struct{} //Product-->object-->Permission-->Groups
+	Permissions map[string]map[string]map[Permission]map[string]struct{} //Product-->object-->Permission-->Groups
 	IsAdmin     bool
 	Bearer      string
 	Groups      []map[string]GroupTree // Group hierarchy tree
@@ -32,7 +23,7 @@ type PermissionTable struct {
 }
 
 func NewPermissionTable(jwt interface{}, memberId []string, bearer string, adminGroup string) *PermissionTable {
-	pt := &PermissionTable{Permissions: make(map[string]map[string]map[permission]map[string]struct{}), IsAdmin: false, Bearer: bearer, MemberID: memberId}
+	pt := &PermissionTable{Permissions: make(map[string]map[string]map[Permission]map[string]struct{}), IsAdmin: false, Bearer: bearer, MemberID: memberId}
 	buildPermissions(pt, jwt, &map[string]GroupTree{}, adminGroup)
 	return pt
 }
@@ -40,14 +31,14 @@ func NewPermissionTable(jwt interface{}, memberId []string, bearer string, admin
 // Recursive call for the jwt traversal
 func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]GroupTree, adminGroup string) {
 	ok := true
-	var permission []interface{}
+	var Permission []interface{}
 
 	// If jwt not in correct format, return null
-	if permission, ok = jwt.([]interface{}); !ok {
+	if Permission, ok = jwt.([]interface{}); !ok {
 		return
 	}
 	// Iterate through each group to gather its information
-	for _, p := range permission {
+	for _, p := range Permission {
 		var groups []interface{}
 		if groups, ok = p.([]interface{}); ok {
 			for _, g := range groups {
@@ -71,7 +62,7 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 
 				(*tree)[group] = GroupTree{Groups: map[string]GroupTree{}, Type: typ}
 
-				// Add Additional permissions
+				// Add Additional Permissions
 				if groups, ok := x[ADDITIONAL].(map[string]interface{}); ok {
 					// Iterate through groups
 					for aGroup, products := range groups {
@@ -103,19 +94,19 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 	return
 }
 
-// Checks the user permissions for a specified product and object
-// Returns: Groups that have the requested permissions
-func (t *PermissionTable) CheckPermission(product string, object string, per permission, groups ...string) ([]string, bool) {
+// Checks the user Permissions for a specified product and object
+// Returns: Groups that have the requested Permissions
+func (t *PermissionTable) CheckPermission(product string, object string, per Permission, groups ...string) ([]string, bool) {
 	// If user is admin, return true
 	// Admin concept deprecated
 	// if t.IsAdmin {
 	// 	return nil, true
 	// }
 
-	// If user has permissions for the desired product and object return them
+	// If user has Permissions for the desired product and object return them
 	if t.Permissions[product] != nil && t.Permissions[product][object] != nil && t.Permissions[product][object][per] != nil {
 		l := make([]string, 0, len(groups))
-		// If special permissions introduced, search and store them in a slice
+		// If special Permissions introduced, search and store them in a slice
 		// Else, store all of them in a slice
 		if groups != nil {
 			for _, gp := range groups {
@@ -137,12 +128,12 @@ func (t *PermissionTable) CheckPermission(product string, object string, per per
 		}
 	}
 
-	// Return false as the user has no permissions
+	// Return false as the user has no Permissions
 	return nil, false
 }
 
-func extractPermissions(p string) []permission {
-	var out []permission
+func extractPermissions(p string) []Permission {
+	var out []Permission
 
 	//Permission flags
 	update := false
@@ -151,9 +142,9 @@ func extractPermissions(p string) []permission {
 	read := false
 
 	enabled := false
-	other := []permission{}
+	other := []Permission{}
 
-	// Iterate through permission string.
+	// Iterate through Permission string.
 	// It will be of the form [c][r][u][d](0|1)[(aA1-9)*]
 	for _, s := range p {
 		switch s {
@@ -170,7 +161,7 @@ func extractPermissions(p string) []permission {
 		case 49: //1
 			enabled = true
 		default:
-			other = append(other, permission(string(s)))
+			other = append(other, Permission(string(s)))
 		}
 
 	}
@@ -191,7 +182,7 @@ func extractPermissions(p string) []permission {
 		}
 	}
 
-	//Append special permissions
+	//Append special Permissions
 	if len(other) > 0 {
 		out = append(out, other...)
 	}
@@ -199,8 +190,8 @@ func extractPermissions(p string) []permission {
 	return out
 }
 
-// Return all the groups that have a permissions into an object
-func (t *PermissionTable) ValidGroups(product string, object string, per permission) map[string]struct{} {
+// Return all the groups that have a Permissions into an object
+func (t *PermissionTable) ValidGroups(product string, object string, per Permission) map[string]struct{} {
 	if p, ok := t.Permissions[product]; ok {
 		if o, ok := p[object]; ok {
 			if perm, ok := o[per]; ok {
@@ -217,8 +208,8 @@ func (t *PermissionTable) GetAllGroups() map[string]struct{} {
 	ret := map[string]struct{}{}
 	for _, product := range t.Permissions {
 		for _, object := range product {
-			for _, permission := range object {
-				for group, _ := range permission {
+			for _, Permission := range object {
+				for group, _ := range Permission {
 					ret[group] = struct{}{}
 				}
 			}
@@ -258,30 +249,30 @@ func (t *PermissionTable) GetGroups(groupType string) []string {
 	return tree
 }
 
-func getObjects(v interface{}, group string, p map[permission]map[string]struct{}, adminGroup string) (map[permission]map[string]struct{}, bool) {
+func getObjects(v interface{}, group string, p map[Permission]map[string]struct{}, adminGroup string) (map[Permission]map[string]struct{}, bool) {
 	isAdmin := false
 
 	// Register objects of the api
 	if p == nil {
-		p = make(map[permission]map[string]struct{})
+		p = make(map[Permission]map[string]struct{})
 	}
 	o := p
 
 	// Iterate through each role of the object
 	if roles, ok := v.([]interface{}); ok {
 		for _, rol := range roles {
-			// Extract role permissions and store them
-			for _, permissions := range extractPermissions(rol.(string)) {
-				if o[permissions] == nil {
-					o[permissions] = make(map[string]struct{})
+			// Extract role Permissions and store them
+			for _, Permissions := range extractPermissions(rol.(string)) {
+				if o[Permissions] == nil {
+					o[Permissions] = make(map[string]struct{})
 				}
-				if _, ok := o[permissions][group]; !ok {
-					o[permissions][group] = struct{}{}
+				if _, ok := o[Permissions][group]; !ok {
+					o[Permissions][group] = struct{}{}
 				}
 			}
 		}
 
-		// If Admin group and all permissions on it => User is admin
+		// If Admin group and all Permissions on it => User is admin
 		if group == adminGroup && o["c"] != nil && o["r"] != nil && o["u"] != nil && o["d"] != nil {
 			_, c := o["c"][adminGroup]
 			_, r := o["r"][adminGroup]
@@ -296,18 +287,18 @@ func getObjects(v interface{}, group string, p map[permission]map[string]struct{
 	return p, isAdmin
 }
 
-func fillPermissionsfromProducts(products map[string]interface{}, permissions *map[string]map[string]map[permission]map[string]struct{}, group string, adminGroup string) bool {
+func fillPermissionsfromProducts(products map[string]interface{}, Permissions *map[string]map[string]map[Permission]map[string]struct{}, group string, adminGroup string) bool {
 	ret := false
 	for product, objects := range products {
-		if (*permissions)[product] == nil {
-			(*permissions)[product] = map[string]map[permission]map[string]struct{}{}
+		if (*Permissions)[product] == nil {
+			(*Permissions)[product] = map[string]map[Permission]map[string]struct{}{}
 		}
-		p := (*permissions)[product]
+		p := (*Permissions)[product]
 		if objs, ok := objects.(map[string]interface{}); ok {
 			// Iterate through objects of the product
 			for object, perms := range objs {
 				isAdmin := false
-				p[object], isAdmin = getObjects(perms, group, p[object], adminGroup) // Get permissions of the object
+				p[object], isAdmin = getObjects(perms, group, p[object], adminGroup) // Get Permissions of the object
 				if isAdmin {
 					ret = true
 				}

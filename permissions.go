@@ -1,4 +1,4 @@
-package auth
+package authorization
 
 type Permission string
 
