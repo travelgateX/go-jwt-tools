@@ -59,18 +59,23 @@ permissions := ctx.Value(authorization.ContextKey).(*authorization.PermissionTab
 
 
 ## Permissions
-### Functions
 
-- `BuildPermissions(jwt interface{})`: Builds the PermissionTable object by traversing the given jwt token. It's **not necessary** to call this function as long as you have the authorization middleware set.
 
-- `(t *PermissionTable) CheckPermission(product string, object string, per string, specials ...string) ([]string, bool)`: Checks the given permissions for a given product and object. Returns the special permissions applied on that object if any, and a boolean indicating if the user has the requested permission. **NOTE:** Special permissions returned can be filtered by the `specials` argument).
+```golang
 
-- `(t *PermissionTable) ValidGroups(product string, object string, per string) (map[string]bool)`: Returns all the groups and its permissions that have any permission for the given product and object.
+type Permissions interface {
+	// CheckPermission returns the given permissions for a given product and object. Returns the special permissions applied on that object if any, and a boolean indicating if the user has the requested permission. NOTE: Special permissions returned can be filtered by the specials argument).
+	CheckPermission(product string, object string, per string, specials ...string) ([]string, bool)
+	// ValidGroups returns all the groups and its permissions that have any permission for the given product and object.
+	ValidGroups(product string, object string, per string) map[string]bool
+	// Returns all groups of a given type
+	GetGroups(groupType string) []string
+	// GetAllGroups returns the group hierarchy
+	GetAllGroups() map[string]struct{}
+	// GetGroupsByTypes returns a map indexed by group types, containing the list of groups of that type
+	GetGroupsByTypes() map[string][]string
+	// GetParents returns all the parent groups of a given group.
+	GetParents(group string) map[string]interface{}
+}
 
-- `(t *PermissionTable) GetAllGroups() (map[string]struct{})`: Returns the group hierarchy found in the token.
-
-- `(t *PermissionTable) GetParents(group string) (map[string]interface{})`: Returns all the parent groups of a given group.
-
-- `(t *PermissionTable) IsAdminFrom(group string) (bool)`: Returns `true` if the user has Admin permissions for the given group.
-
-- `(t *PermissionTable) CheckGroupPermissions(group string, per string, args ...string) ([]string, bool)`: Same functionality as `CheckPermission` but for additional permissions only.
+```
