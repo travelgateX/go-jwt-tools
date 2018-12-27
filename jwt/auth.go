@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/travelgateX/go-jwt-tools"
 )
 
@@ -47,7 +47,7 @@ func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) 
 	// dummy treatment
 	if p.DummyToken != "" && authorizationHeaderParts[1] == p.DummyToken {
 		return &authorization.User{
-			authorizationorizationValue: authorizationHeader,
+			AuthorizationValue: authorizationHeader,
 			IsDummy:            true,
 			Permissions:        nil, // TODO: NoopImpl?
 		}, nil
@@ -92,7 +92,7 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		}
 	}
 	return &authorization.User{
-		authorizationorizationValue: "Bearer " + token.Raw,
+		AuthorizationValue: "Bearer " + token.Raw,
 		IsDummy:            false,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
 	}, nil

@@ -8,6 +8,7 @@ const (
 	Delete  Permission = "d"
 	Read    Permission = "r"
 	Execute Permission = "x"
+	Admin   Permission = "a"
 )
 
 type Permissions interface {
