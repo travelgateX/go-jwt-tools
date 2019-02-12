@@ -95,5 +95,6 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		AuthorizationValue: "Bearer " + token.Raw,
 		IsDummy:            false,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
+		UserID:             memberIDs,
 	}, nil
 }
