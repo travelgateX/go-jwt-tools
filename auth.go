@@ -34,7 +34,7 @@ func Middleware(p Parser) func(h http.Handler) http.Handler {
 
 			pt, err := p.Parse(authHeader)
 			if err != nil {
-				fmt.Fprintln(w, err)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
