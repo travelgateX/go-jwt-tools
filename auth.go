@@ -1,7 +1,6 @@
 package authorization
 
 import (
-	"fmt"
 	"net/http"
 
 	"context"
