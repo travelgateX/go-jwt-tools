@@ -13,6 +13,7 @@ type User struct {
 	AuthorizationValue string
 	IsDummy            bool
 	Permissions        Permissions
+	UserID             []string
 }
 
 // Parser creates a User from an authorization header
