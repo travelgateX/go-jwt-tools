@@ -28,7 +28,7 @@ func Middleware(p Parser) func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				fmt.Fprintln(w, "Authorization header required")
+				http.Error(w, "Authorization header required", http.StatusUnauthorized)
 				return
 			}
 
