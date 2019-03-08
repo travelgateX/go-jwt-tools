@@ -1,6 +1,6 @@
 # go-jwt-tools
 
-Golang authorization http middleware for Authorization headers and a 
+Golang authorization http middleware for Authorization headers
 
 These are the important features on this package:
 
@@ -11,6 +11,7 @@ type User struct {
 	AuthorizationValue string
 	IsDummy            bool
 	Permissions        Permissions
+	UserID             []string
 }
 
 type Permissions interface {
