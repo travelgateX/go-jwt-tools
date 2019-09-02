@@ -91,9 +91,16 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 			}
 		}
 	}
+
+	fetchNeeded := false
+	if fn, ok := claimsMap["fetch_needed"]; ok {
+		fetchNeeded, _ = fn.(bool)
+	}
+
 	return &authorization.User{
 		AuthorizationValue: "Bearer " + token.Raw,
 		IsDummy:            false,
+		FetchNeeded:        fetchNeeded,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
 		UserID:             memberIDs,
 	}, nil
