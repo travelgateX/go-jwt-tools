@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/travelgateX/go-jwt-tools"
+	authorization "github.com/travelgateX/go-jwt-tools"
 )
 
 var _ authorization.Parser = (*Parser)(nil)
@@ -23,6 +23,7 @@ type ParserConfig struct {
 	IgnoreExpiration bool     `json:"ignore_expiration"`
 	MemberIDClaim    []string `json:"member_id_claim"`
 	GroupsClaim      []string `json:"groups_claim"`
+	FetchNeededClaim []string `json:"fetch_needed_claim"`
 }
 
 // NewParser returns an instance of Parser which parses bearers from a publicKey
@@ -73,6 +74,7 @@ func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) 
 
 func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	claimsMap := token.Claims.(jwt.MapClaims)
+
 	// TODO: remove when migration finishes
 	groups := make([]interface{}, 0, len(p.GroupsClaim))
 	for _, g := range p.GroupsClaim {
@@ -83,6 +85,7 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	if len(groups) == 0 {
 		return nil, fmt.Errorf("Your token doesn't contain any group")
 	}
+
 	memberIDs := make([]string, 0, len(p.MemberIDClaim))
 	for _, m := range p.MemberIDClaim {
 		if c, ok := claimsMap[m]; ok {
@@ -93,8 +96,13 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	}
 
 	fetchNeeded := false
-	if fn, ok := claimsMap["fetch_needed"]; ok {
-		fetchNeeded, _ = fn.(bool)
+	for _, f := range p.FetchNeededClaim {
+		if c, ok := claimsMap[f]; ok {
+			if c.(bool) {
+				fetchNeeded = true
+				break
+			}
+		}
 	}
 
 	return &authorization.User{
