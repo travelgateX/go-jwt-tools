@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	authorization "github.com/travelgateX/go-jwt-tools"
+	"github.com/travelgateX/go-jwt-tools/fetcher"
 )
 
 var _ authorization.Parser = (*Parser)(nil)
@@ -20,6 +21,7 @@ type ParserConfig struct {
 	PublicKey        string   `json:"public_key_str"`
 	AdminGroup       string   `json:"admin_group"`
 	DummyToken       string   `json:"dummy_token"`
+	FetcherURL       string   `json:"fetcher_url"`
 	IgnoreExpiration bool     `json:"ignore_expiration"`
 	MemberIDClaim    []string `json:"member_id_claim"`
 	GroupsClaim      []string `json:"groups_claim"`
@@ -75,6 +77,35 @@ func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) 
 func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	claimsMap := token.Claims.(jwt.MapClaims)
 
+	// First of all is checked if the token received in a "fullToken"
+	fetchNeeded := false
+	for _, f := range p.FetchNeededClaim {
+		if c, ok := claimsMap[f]; ok {
+			if c.(bool) {
+				shortToken := "Bearer " + token.Raw
+
+				// Get the client's "fullToken"
+				client := fetcher.GetClient(p.FetcherURL)
+				fullBearer, err := client.GetBearer("", shortToken)
+				if err != nil {
+					return nil, err
+				}
+
+				// Do Parse(), recursive call with the new authorization token
+				user, err := p.Parse("Bearer " + fullBearer)
+				if err != nil {
+					return nil, err
+				}
+
+				// Set the reduced token in the response object
+				user.AuthorizationValue = shortToken
+
+				return user, nil
+			}
+		}
+	}
+
+	// This way is done when the token received is a "fullToken"
 	// TODO: remove when migration finishes
 	groups := make([]interface{}, 0, len(p.GroupsClaim))
 	for _, g := range p.GroupsClaim {
@@ -91,16 +122,6 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		if c, ok := claimsMap[m]; ok {
 			if mID, ok := c.(string); ok {
 				memberIDs = append(memberIDs, mID)
-			}
-		}
-	}
-
-	fetchNeeded := false
-	for _, f := range p.FetchNeededClaim {
-		if c, ok := claimsMap[f]; ok {
-			if c.(bool) {
-				fetchNeeded = true
-				break
 			}
 		}
 	}
