@@ -1,4 +1,4 @@
-package fetcher
+package jwt
 
 import (
 	"context"
@@ -7,18 +7,36 @@ import (
 	"github.com/machinebox/graphql"
 )
 
+type client interface {
+	GetBearer(userID, authHeader string) (string, error)
+}
+
+// GetBearerResponseStruct api graphql response
+type GetBearerResponseStruct struct {
+	Admin struct {
+		GetBearer struct {
+			Token         string `json:"token"`
+			AdviseMessage []struct {
+				Code        string `json:"code"`
+				Description string `json:"description"`
+				Level       string `json:"level"`
+			} `json:"adviseMessage"`
+		} `json:"getBearer"`
+	} `json:"admin"`
+}
+
 type fetcherClient struct {
 	cli *graphql.Client
 }
 
-func NewClient(url string) Client {
+func newClient(url string) client {
 	cli := graphql.NewClient(url)
 	// cli.Log = func(s string) { log.Println(s) }
-	return fetcherClient{cli}
+	return &fetcherClient{cli}
 }
 
 // GetBearer returns user bearer
-func (a fetcherClient) GetBearer(userID, authHeader string) (string, error) {
+func (a *fetcherClient) GetBearer(userID, authHeader string) (string, error) {
 	req := graphql.NewRequest(`
 		query{
 			admin{
