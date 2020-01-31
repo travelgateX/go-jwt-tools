@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,21 +14,37 @@ var _ authorization.Parser = (*Parser)(nil)
 type Parser struct {
 	ParserConfig
 	KeyFunc func(token *jwt.Token) (interface{}, error)
+
+	client client
 }
 
 // ParserConfig is the data required to instance a Parser
 type ParserConfig struct {
-	PublicKey        string   `json:"public_key_str"`
-	AdminGroup       string   `json:"admin_group"`
-	DummyToken       string   `json:"dummy_token"`
-	IgnoreExpiration bool     `json:"ignore_expiration"`
-	MemberIDClaim    []string `json:"member_id_claim"`
-	GroupsClaim      []string `json:"groups_claim"`
-	FetchNeededClaim []string `json:"fetch_needed_claim"`
+	PublicKey        string        `json:"public_key_str"`
+	AdminGroup       string        `json:"admin_group"`
+	DummyToken       string        `json:"dummy_token"`
+	IgnoreExpiration bool          `json:"ignore_expiration"`
+	MemberIDClaim    []string      `json:"member_id_claim"`
+	GroupsClaim      []string      `json:"groups_claim"`
+	FetchNeededClaim []string      `json:"fetch_needed_claim"`
+	ClientConfig     *ClientConfig `json:"client_config"`
+}
+
+type ClientConfig struct {
+	FetcherURL string `json:"fetcher_url"`
+}
+
+func (c ClientConfig) buildClient() client {
+	return newClient(c.FetcherURL)
 }
 
 // NewParser returns an instance of Parser which parses bearers from a publicKey
 func NewParser(p ParserConfig) *Parser {
+	var client client
+	if p.ClientConfig != nil {
+		client = p.ClientConfig.buildClient()
+	}
+
 	jkf := func(token *jwt.Token) (interface{}, error) {
 		var result interface{}
 		result, _ = jwt.ParseRSAPublicKeyFromPEM([]byte(p.PublicKey))
@@ -36,6 +53,7 @@ func NewParser(p ParserConfig) *Parser {
 	return &Parser{
 		KeyFunc:      jkf,
 		ParserConfig: p,
+		client:       client,
 	}
 }
 
@@ -75,6 +93,34 @@ func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) 
 func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	claimsMap := token.Claims.(jwt.MapClaims)
 
+	// First of all is checked if the token received in a "fullToken"
+	for _, f := range p.FetchNeededClaim {
+		if c, ok := claimsMap[f]; ok {
+			if c.(bool) {
+				if p.client == nil {
+					return nil, errors.New("invalid bearer, too large")
+				}
+				// Get the client's "fullToken"
+				shortToken := "Bearer " + token.Raw
+				fullBearer, err := p.client.GetBearer("", shortToken)
+				if err != nil {
+					return nil, err
+				}
+
+				// Do Parse(), recursive call with the new authorization token
+				user, err := p.Parse("Bearer " + fullBearer)
+				if err != nil {
+					return nil, err
+				}
+
+				// Set the reduced token in the response object
+				user.AuthorizationValue = shortToken
+				return user, nil
+			}
+		}
+	}
+
+	// This way is done when the token received is a "fullToken"
 	// TODO: remove when migration finishes
 	groups := make([]interface{}, 0, len(p.GroupsClaim))
 	for _, g := range p.GroupsClaim {
@@ -95,20 +141,9 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		}
 	}
 
-	fetchNeeded := false
-	for _, f := range p.FetchNeededClaim {
-		if c, ok := claimsMap[f]; ok {
-			if c.(bool) {
-				fetchNeeded = true
-				break
-			}
-		}
-	}
-
 	return &authorization.User{
 		AuthorizationValue: "Bearer " + token.Raw,
 		IsDummy:            false,
-		FetchNeeded:        fetchNeeded,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
 		UserID:             memberIDs,
 	}, nil

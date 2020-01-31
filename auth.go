@@ -11,7 +11,6 @@ type User struct {
 	// AuthorizationValue is the auth header value with which a user was created
 	AuthorizationValue string
 	IsDummy            bool
-	FetchNeeded        bool
 	Permissions        Permissions
 	UserID             []string
 }
