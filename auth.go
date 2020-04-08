@@ -50,6 +50,11 @@ func UserFromContext(ctx context.Context) (*User, bool) {
 	return val, ok
 }
 
+// ContextWithUser returns a new `context.Context` that holds a reference to the user `u`
+func ContextWithUser(ctx context.Context, u *User) context.Context {
+	return context.WithValue(ctx, activeUser, u)
+}
+
 type contextKey struct{}
 
 var activeUser = contextKey{}
