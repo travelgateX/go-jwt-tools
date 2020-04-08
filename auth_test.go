@@ -111,3 +111,13 @@ func TestUserFromContext_NotFound(t *testing.T) {
 	assert.False(t, ok)
 	assert.Nil(t, ctxUser)
 }
+
+func TestContextCopyUser(t *testing.T) {
+	user := &User{}
+	parent := ContextWithUser(context.Background(), user)
+	background := ContextCopyUser(parent, context.Background())
+
+	bgUser, found := UserFromContext(background)
+	assert.True(t, found)
+	assert.Same(t, user, bgUser)
+}

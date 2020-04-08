@@ -57,6 +57,15 @@ func ContextWithUser(ctx context.Context, u *User) context.Context {
 	return context.WithValue(ctx, activeUser, u)
 }
 
+// ContextCopyUser lookups for a user in a parent context a copies it into another context. Useful
+// when creating background context with the parent's values
+func ContextCopyUser(parent, background context.Context) context.Context {
+	if u, ok := UserFromContext(parent); ok {
+		background = ContextWithUser(background, u)
+	}
+	return background
+}
+
 type contextKey struct{}
 
 var activeUser = contextKey{}
