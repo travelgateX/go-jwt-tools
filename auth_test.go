@@ -82,52 +82,6 @@ func TestMiddleware_success(t *testing.T) {
 	assert.Equal(t, "", rec.Body.String())
 }
 
-func TestMiddleware(t *testing.T) {
-	type result struct {
-		containedMessageInBody string
-		statusCode             int
-		nextHandlerExecuted    bool
-		parserErr              error
-	}
-	type table struct {
-		name    string
-		request *http.Request
-		want    result
-	}
-
-	tt := []table{}
-
-	for _, test := range tt {
-		t.Run(test.name, func(t *testing.T) {
-			var nextHandler http.Handler
-			var nextHandlerExecuted bool
-			nextHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				nextHandlerExecuted = true
-			})
-
-			user := &User{}
-			parser := &MockParser{
-				ParseFn: func(authHeader string) (*User, error) {
-					return user, test.want.parserErr
-				},
-			}
-
-			mw := Middleware(parser)
-
-			rec := httptest.NewRecorder()
-			mw(nextHandler).ServeHTTP(rec, test.request)
-
-			assert.True(t, strings.Contains(rec.Body.String(), test.want.containedMessageInBody))
-			assert.Equal(t, test.want.statusCode, rec.Code)
-			assert.Equal(t, test.want.nextHandlerExecuted, nextHandlerExecuted)
-
-			if test.want.parserErr != nil {
-				assert.True(t, strings.Contains(rec.Body.String(), test.want.containedMessageInBody))
-			}
-		})
-	}
-}
-
 type testNextHandler struct {
 	executed bool
 	req      *http.Request
