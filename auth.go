@@ -28,21 +28,23 @@ func Middleware(p Parser) func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "Authorization header required", http.StatusUnauthorized)
+				http.Error(w, errMessageNoAuthorizationHeader, http.StatusUnauthorized)
 				return
 			}
 
-			pt, err := p.Parse(authHeader)
+			u, err := p.Parse(authHeader)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), activeUser, pt)
+			ctx := ContextWithUser(r.Context(), u)
 			h.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
+
+const errMessageNoAuthorizationHeader string = "Authorization header required"
 
 // UserFromContext returns the User stored in a context
 func UserFromContext(ctx context.Context) (*User, bool) {

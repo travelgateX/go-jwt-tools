@@ -2,10 +2,143 @@ package authorization
 
 import (
 	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+// TestMiddleware_wrongHeader tests that the handler returns error when doesn't receive authorization header
+func TestMiddleware_noAuthorizationHeader(t *testing.T) {
+	mw := Middleware(nil)
+
+	req, err := http.NewRequest("POST", "", nil)
+	assert.NoError(t, err)
+	rec := httptest.NewRecorder()
+
+	nextHandler := &testNextHandler{}
+	mw(nextHandler.Handler()).ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Equal(t, false, nextHandler.executed)
+	assert.True(t, strings.Contains(rec.Body.String(), errMessageNoAuthorizationHeader))
+}
+
+func TestMiddleware_ParserError(t *testing.T) {
+	parserErr := errors.New("parse err")
+	parser := &MockParser{
+		ParseFn: func(authHeader string) (*User, error) {
+			return nil, parserErr
+		},
+	}
+
+	mw := Middleware(parser)
+
+	req, err := http.NewRequest("POST", "", nil)
+	assert.NoError(t, err)
+	req.Header.Add("Authorization", "bearer")
+
+	rec := httptest.NewRecorder()
+
+	nextHandler := &testNextHandler{}
+	mw(nextHandler.Handler()).ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Equal(t, false, nextHandler.executed)
+	assert.True(t, strings.Contains(rec.Body.String(), parserErr.Error()))
+}
+
+func TestMiddleware_success(t *testing.T) {
+	newUser := func(authHeader string) *User {
+		return &User{AuthorizationValue: authHeader}
+	}
+
+	parser := &MockParser{
+		ParseFn: func(authHeader string) (*User, error) {
+			return newUser(authHeader), nil
+		},
+	}
+
+	mw := Middleware(parser)
+
+	req, err := http.NewRequest("POST", "", nil)
+	assert.NoError(t, err)
+	authHeader := "bearer WAEDWe2m3wasdlol"
+	req.Header.Add("Authorization", authHeader)
+
+	rec := httptest.NewRecorder()
+
+	nextHandler := &testNextHandler{}
+	mw(nextHandler.Handler()).ServeHTTP(rec, req)
+
+	contextUser, found := UserFromContext(nextHandler.req.Context())
+	assert.True(t, found)
+	assert.Equal(t, newUser(authHeader), contextUser)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, true, nextHandler.executed)
+	assert.Equal(t, "", rec.Body.String())
+}
+
+func TestMiddleware(t *testing.T) {
+	type result struct {
+		containedMessageInBody string
+		statusCode             int
+		nextHandlerExecuted    bool
+		parserErr              error
+	}
+	type table struct {
+		name    string
+		request *http.Request
+		want    result
+	}
+
+	tt := []table{}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			var nextHandler http.Handler
+			var nextHandlerExecuted bool
+			nextHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				nextHandlerExecuted = true
+			})
+
+			user := &User{}
+			parser := &MockParser{
+				ParseFn: func(authHeader string) (*User, error) {
+					return user, test.want.parserErr
+				},
+			}
+
+			mw := Middleware(parser)
+
+			rec := httptest.NewRecorder()
+			mw(nextHandler).ServeHTTP(rec, test.request)
+
+			assert.True(t, strings.Contains(rec.Body.String(), test.want.containedMessageInBody))
+			assert.Equal(t, test.want.statusCode, rec.Code)
+			assert.Equal(t, test.want.nextHandlerExecuted, nextHandlerExecuted)
+
+			if test.want.parserErr != nil {
+				assert.True(t, strings.Contains(rec.Body.String(), test.want.containedMessageInBody))
+			}
+		})
+	}
+}
+
+type testNextHandler struct {
+	executed bool
+	req      *http.Request
+}
+
+func (h *testNextHandler) Handler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.executed = true
+		h.req = r
+	})
+}
 
 func TestUserFromContext_Found(t *testing.T) {
 	u := &User{AuthorizationValue: "lol"}
