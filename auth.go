@@ -37,8 +37,7 @@ func Middleware(p Parser) func(h http.Handler) http.Handler {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
-
-			ctx := context.WithValue(r.Context(), activeUser, pt)
+			ctx:= InjectUser(r.Context(), pt)
 			h.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -48,6 +47,10 @@ func Middleware(p Parser) func(h http.Handler) http.Handler {
 func UserFromContext(ctx context.Context) (*User, bool) {
 	val, ok := ctx.Value(activeUser).(*User)
 	return val, ok
+}
+
+func InjectUser(ctx context.Context, user *User) context.Context {
+	return context.WithValue(ctx, activeUser, user)
 }
 
 type contextKey struct{}
