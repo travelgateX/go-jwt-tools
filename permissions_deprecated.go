@@ -6,9 +6,6 @@ const GROUPS = "g"
 const ADDITIONAL = "a"
 const TYPE = "t"
 
-
-const GROUP_Permission = "grp"
-
 type GroupTree struct {
 	Type   string               // Group type
 	Groups map[string]GroupTree // Group hierarchy tree
@@ -117,7 +114,7 @@ func (t *PermissionTable) CheckPermission(product string, object string, per Per
 				}
 			}
 		} else {
-			for k, _ := range t.Permissions[product][object][per] {
+			for k := range t.Permissions[product][object][per] {
 				l = append(l, k)
 			}
 		}
@@ -138,11 +135,11 @@ func extractPermissions(p string) []Permission {
 	//Permission flags
 	update := false
 	create := false
-	delete := false
+	del := false
 	read := false
 
 	enabled := false
-	other := []Permission{}
+	var other []Permission
 
 	// Iterate through Permission string.
 	// It will be of the form [c][r][u][d](0|1)[(aA1-9)*]
@@ -155,18 +152,18 @@ func extractPermissions(p string) []Permission {
 		case 117: //u
 			update = true
 		case 100: //d
-			delete = true
+			del = true
 		case 48: //0
 			enabled = false
 		case 49: //1
 			enabled = true
 		default:
-			other = append(other, Permission(string(s)))
+			other = append(other, Permission(s))
 		}
 
 	}
 
-	// Append every charater
+	// Append every character
 	if enabled {
 		if create {
 			out = append(out, Create)
@@ -177,7 +174,7 @@ func extractPermissions(p string) []Permission {
 		if update {
 			out = append(out, Update)
 		}
-		if delete {
+		if del {
 			out = append(out, Delete)
 		}
 	}
@@ -209,7 +206,7 @@ func (t *PermissionTable) GetAllGroups() map[string]struct{} {
 	for _, product := range t.Permissions {
 		for _, object := range product {
 			for _, Permission := range object {
-				for group, _ := range Permission {
+				for group := range Permission {
 					ret[group] = struct{}{}
 				}
 			}
