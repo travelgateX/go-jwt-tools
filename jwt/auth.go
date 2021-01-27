@@ -3,10 +3,10 @@ package jwt
 import (
 	"errors"
 	"fmt"
+	authorization "github.com/travelgateX/go-jwt-tools"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
-	authorization "github.com/travelgateX/go-jwt-tools"
+	"github.com/form3tech-oss/jwt-go"
 )
 
 var _ authorization.Parser = (*Parser)(nil)
@@ -61,7 +61,7 @@ func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) 
 	// validate bearer
 	authorizationHeaderParts := strings.SplitN(authorizationHeader, " ", 2)
 	if len(authorizationHeaderParts) != 2 || authorizationHeaderParts[0] != "Bearer" {
-		return nil, fmt.Errorf("authorizationorization header format must be Bearer {token}")
+		return nil, fmt.Errorf("authorization header format must be Bearer {token}")
 	}
 	// dummy treatment
 	if p.DummyToken != "" && authorizationHeaderParts[1] == p.DummyToken {
