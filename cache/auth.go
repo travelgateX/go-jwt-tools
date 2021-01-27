@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"github.com/travelgateX/go-cache/cache"
 	"github.com/travelgateX/go-jwt-tools"
+	"github.com/travelgateX/go-cache/cache"
 )
 
 type Parser struct {
