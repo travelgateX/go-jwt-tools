@@ -1,66 +1,60 @@
 package jwt
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
-
-	"github.com/machinebox/graphql"
+	"io/ioutil"
+	"net/http"
 )
 
 type client interface {
 	GetBearer(userID, authHeader string) (string, error)
 }
 
-// GetBearerResponseStruct api graphql response
 type GetBearerResponseStruct struct {
-	Admin struct {
-		GetBearer struct {
-			Token         string `json:"token"`
-			AdviseMessage []struct {
-				Code        string `json:"code"`
-				Description string `json:"description"`
-				Level       string `json:"level"`
-			} `json:"adviseMessage"`
-		} `json:"getBearer"`
-	} `json:"admin"`
+	Email				string `json:"email,omitempty"`
+	Token 				string `json:"token,omitempty"`
+	Status 				int 	`json:"status,omitempty"`
+	ErrorDescription 	string `json:"errorDescription,omitempty"`
 }
 
 type fetcherClient struct {
-	cli *graphql.Client
+	cli http.Client
+	url string
 }
 
 func newClient(url string) client {
-	cli := graphql.NewClient(url)
-	// cli.Log = func(s string) { log.Println(s) }
-	return &fetcherClient{cli}
+	cli := http.Client{}
+	return &fetcherClient{cli, url}
 }
 
 // GetBearer returns user bearer
 func (a *fetcherClient) GetBearer(userID, authHeader string) (string, error) {
-	req := graphql.NewRequest(`
-		query{
-			admin{
-				getBearer{
-					token
-					adviseMessage{
-						code
-						description
-						level
-					}
-				}
-			}
-		}
-	`)
-
-	res := GetBearerResponseStruct{}
-	req.Header.Add("Authorization", authHeader)
-
-	ctx := context.Background()
-	if err := a.cli.Run(ctx, req, &res); err != nil {
+	req, err := http.NewRequest("GET", a.url, nil)
+	if err != nil {
 		return "", err
 	}
-	if res.Admin.GetBearer.AdviseMessage != nil && len(res.Admin.GetBearer.AdviseMessage) > 0 {
-		return "", fmt.Errorf("error fetching permissions data: %v", res.Admin.GetBearer.AdviseMessage[0].Description)
+
+	req.Header.Add("Authorization", authHeader)
+	res, err := a.cli.Do(req)
+	if err != nil {
+		return "", err
 	}
-	return res.Admin.GetBearer.Token, nil
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	resJSON := GetBearerResponseStruct{}
+	err = json.Unmarshal(body, &resJSON)
+	if err != nil {
+		return "", err
+	}
+
+	if resJSON.ErrorDescription != ""  {
+		return "", fmt.Errorf("error fetching permissions data: %v", resJSON.ErrorDescription)
+	}
+	return resJSON.Token, nil
 }
