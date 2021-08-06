@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"errors"
 	"fmt"
 	authorization "github.com/travelgateX/go-jwt-tools"
 	"strings"
@@ -97,25 +96,24 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	for _, f := range p.FetchNeededClaim {
 		if c, ok := claimsMap[f]; ok {
 			if c.(bool) {
-				if p.client == nil {
-					return nil, errors.New("invalid bearer, too large")
-				}
-				// Get the client's "fullToken"
-				shortToken := "Bearer " + token.Raw
-				fullBearer, err := p.client.GetBearer("", shortToken)
-				if err != nil {
-					return nil, err
-				}
+				if p.client != nil {
+					// Get the client's "fullToken"
+					shortToken := "Bearer " + token.Raw
+					fullBearer, err := p.client.GetBearer("", shortToken)
+					if err != nil {
+						return nil, err
+					}
 
-				// Do Parse(), recursive call with the new authorization token
-				user, err := p.Parse("Bearer " + fullBearer)
-				if err != nil {
-					return nil, err
-				}
+					// Do Parse(), recursive call with the new authorization token
+					user, err := p.Parse("Bearer " + fullBearer)
+					if err != nil {
+						return nil, err
+					}
 
-				// Set the reduced token in the response object
-				user.AuthorizationValue = shortToken
-				return user, nil
+					// Set the reduced token in the response object
+					user.AuthorizationValue = shortToken
+					return user, nil
+				}
 			}
 		}
 	}
@@ -128,9 +126,9 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 			groups = append(groups, c)
 		}
 	}
-	if len(groups) == 0 {
-		return nil, fmt.Errorf("Your token doesn't contain any group")
-	}
+	//if len(groups) == 0 {
+	//	return nil, fmt.Errorf("Your token doesn't contain any group")
+	//}
 
 	memberIDs := make([]string, 0, len(p.MemberIDClaim))
 	for _, m := range p.MemberIDClaim {
