@@ -7,8 +7,8 @@ import (
 
 	"context"
 
-	"github.com/auth0/go-jwt-middleware"
-	"github.com/dgrijalva/jwt-go"
+	jwtmiddleware "github.com/auth0/go-jwt-middleware"
+	jwt "github.com/form3tech-oss/jwt-go"
 )
 
 type Config struct {
