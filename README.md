@@ -12,6 +12,7 @@ type User struct {
 	IsDummy            bool
 	Permissions        Permissions
 	UserID             []string
+	TgxMember          bool
 }
 
 type Permissions interface {
@@ -62,12 +63,15 @@ The jwt parser can be instantiated from:
 
 ```go
 type ParserConfig struct {
-	PublicKey        string  
-	AdminGroup       string  
-	DummyToken       string  
-	IgnoreExpiration bool    
-	MemberIDClaim    []string
-	GroupsClaim      []string
+	ClientConfig     *ClientConfig 
+	PublicKey        string        
+	AdminGroup       string        
+	DummyToken       string        
+	MemberIDClaim    []string      
+	GroupsClaim      []string      
+	FetchNeededClaim []string      
+	TGXMemberClaim   []string      
+	IgnoreExpiration bool          
 }
 ```
 
