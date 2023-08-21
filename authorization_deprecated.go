@@ -14,9 +14,9 @@ import (
 type Config struct {
 	PublicKeyStr     string   `json:"public_key_str"`
 	AdminGroup       string   `json:"admin_group"`
+	DummyToken       string   `json:"dummy_token"`
 	MemberIDClaim    []string `json:"member_id_claim"`
 	GroupsClaim      []string `json:"groups_claim"`
-	DummyToken       string   `json:"dummy_token"`
 	IgnoreExpiration bool     `json:"ignore_expiration"`
 }
 

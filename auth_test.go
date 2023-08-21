@@ -51,6 +51,136 @@ func TestMiddleware_ParserError(t *testing.T) {
 	assert.True(t, strings.Contains(rec.Body.String(), parserErr.Error()))
 }
 
+func TestIsNotApiKey(t *testing.T) {
+	newUser := func(authHeader string) *User {
+		return &User{
+			Permissions:        nil,
+			AuthorizationValue: authHeader,
+			UserID:             []string{"twinki@winki.com"},
+			IsDummy:            false,
+		}
+	}
+
+	parser := &MockParser{
+		ParseFn: func(authHeader string) (*User, error) {
+			return newUser(authHeader), nil
+		},
+	}
+
+	mw := Middleware(parser)
+	req, err := http.NewRequest("POST", "", nil)
+	assert.NoError(t, err)
+	authHeader := "bearer WAEDWe2m3wasdlol"
+	req.Header.Add("Authorization", authHeader)
+
+	rec := httptest.NewRecorder()
+
+	nextHandler := &testNextHandler{}
+	mw(nextHandler.Handler()).ServeHTTP(rec, req)
+
+	isApiKey := IsApikeyFromContext(nextHandler.req.Context())
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, false, isApiKey)
+}
+
+func TestIsTGXMember(t *testing.T) {
+	newUser := func(authHeader string) *User {
+		return &User{
+			Permissions:        nil,
+			AuthorizationValue: authHeader,
+			UserID:             []string{"twinki-winki-com-truki"},
+			IsDummy:            false,
+			TgxMember:          true,
+		}
+	}
+
+	parser := &MockParser{
+		ParseFn: func(authHeader string) (*User, error) {
+			return newUser(authHeader), nil
+		},
+	}
+
+	mw := Middleware(parser)
+	req, err := http.NewRequest("POST", "", nil)
+	assert.NoError(t, err)
+	authHeader := "bearer WAEDWe2m3wasdlol"
+	req.Header.Add("Authorization", authHeader)
+
+	rec := httptest.NewRecorder()
+
+	nextHandler := &testNextHandler{}
+	mw(nextHandler.Handler()).ServeHTTP(rec, req)
+
+	IsTGXMember := IsTGXMember(nextHandler.req.Context())
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, true, IsTGXMember)
+}
+
+func TestIsNOTTGXMember(t *testing.T) {
+	newUser := func(authHeader string) *User {
+		return &User{
+			Permissions:        nil,
+			AuthorizationValue: authHeader,
+			UserID:             []string{"twinki-winki-com-truki"},
+			IsDummy:            false,
+			TgxMember:          false,
+		}
+	}
+
+	parser := &MockParser{
+		ParseFn: func(authHeader string) (*User, error) {
+			return newUser(authHeader), nil
+		},
+	}
+
+	mw := Middleware(parser)
+	req, err := http.NewRequest("POST", "", nil)
+	assert.NoError(t, err)
+	authHeader := "bearer WAEDWe2m3wasdlol"
+	req.Header.Add("Authorization", authHeader)
+
+	rec := httptest.NewRecorder()
+
+	nextHandler := &testNextHandler{}
+	mw(nextHandler.Handler()).ServeHTTP(rec, req)
+
+	IsTGXMember := IsTGXMember(nextHandler.req.Context())
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, false, IsTGXMember)
+}
+
+func TestIsApiKey(t *testing.T) {
+	newUser := func(authHeader string) *User {
+		return &User{
+			Permissions:        nil,
+			AuthorizationValue: authHeader,
+			UserID:             []string{"twinki-winki-com-truki"},
+			IsDummy:            false,
+		}
+	}
+
+	parser := &MockParser{
+		ParseFn: func(authHeader string) (*User, error) {
+			return newUser(authHeader), nil
+		},
+	}
+
+	mw := Middleware(parser)
+	req, err := http.NewRequest("POST", "", nil)
+	assert.NoError(t, err)
+	authHeader := "bearer WAEDWe2m3wasdlol"
+	req.Header.Add("Authorization", authHeader)
+
+	rec := httptest.NewRecorder()
+
+	nextHandler := &testNextHandler{}
+	mw(nextHandler.Handler()).ServeHTTP(rec, req)
+
+	isApiKey := IsApikeyFromContext(nextHandler.req.Context())
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, true, isApiKey)
+}
+
 func TestMiddleware_success(t *testing.T) {
 	newUser := func(authHeader string) *User {
 		return &User{AuthorizationValue: authHeader}
@@ -83,8 +213,8 @@ func TestMiddleware_success(t *testing.T) {
 }
 
 type testNextHandler struct {
-	executed bool
 	req      *http.Request
+	executed bool
 }
 
 func (h *testNextHandler) Handler() http.Handler {

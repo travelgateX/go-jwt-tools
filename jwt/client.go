@@ -12,10 +12,10 @@ type client interface {
 }
 
 type GetBearerResponseStruct struct {
-	Email				string `json:"email,omitempty"`
-	Token 				string `json:"token,omitempty"`
-	Status 				int 	`json:"status,omitempty"`
-	ErrorDescription 	string `json:"errorDescription,omitempty"`
+	Email            string `json:"email,omitempty"`
+	Token            string `json:"token,omitempty"`
+	ErrorDescription string `json:"errorDescription,omitempty"`
+	Status           int    `json:"status,omitempty"`
 }
 
 type fetcherClient struct {
@@ -53,7 +53,7 @@ func (a *fetcherClient) GetBearer(userID, authHeader string) (string, error) {
 		return "", err
 	}
 
-	if resJSON.ErrorDescription != ""  {
+	if resJSON.ErrorDescription != "" {
 		return "", fmt.Errorf("error fetching permissions data: %v", resJSON.ErrorDescription)
 	}
 	return resJSON.Token, nil
