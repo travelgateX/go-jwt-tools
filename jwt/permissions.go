@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"github.com/travelgateX/go-jwt-tools"
+	authorization "github.com/travelgateX/go-jwt-tools"
 )
 
 const (
@@ -13,16 +13,16 @@ const (
 )
 
 type GroupTree struct {
-	Type   string               // Group type
-	Groups map[string]GroupTree // Group hierarchy tree
+	Groups map[string]GroupTree
+	Type   string
 }
 
 var _ authorization.Permissions = (*Permissions)(nil)
 
 type Permissions struct {
 	Permissions map[string]map[string]map[authorization.Permission]map[string]struct{} //Product-->object-->Permission-->Groups
-	Groups      []map[string]GroupTree                                        // Group hierarchy tree
-	MemberID    []string                                                      // Member identifier
+	Groups      []map[string]GroupTree                                                 // Group hierarchy tree
+	MemberID    []string                                                               // Member identifier
 }
 
 func NewPermissions(jwt interface{}, memberId []string, adminGroup string) *Permissions {
@@ -111,7 +111,7 @@ func (t *Permissions) CheckPermission(product string, object string, per authori
 				}
 			}
 		} else {
-			for k, _ := range t.Permissions[product][object][per] {
+			for k := range t.Permissions[product][object][per] {
 				l = append(l, k)
 			}
 		}
@@ -203,7 +203,7 @@ func (t *Permissions) GetAllGroups() map[string]struct{} {
 	for _, product := range t.Permissions {
 		for _, object := range product {
 			for _, permission := range object {
-				for group, _ := range permission {
+				for group := range permission {
 					ret[group] = struct{}{}
 				}
 			}

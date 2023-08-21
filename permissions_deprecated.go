@@ -7,16 +7,16 @@ const ADDITIONAL = "a"
 const TYPE = "t"
 
 type GroupTree struct {
-	Type   string               // Group type
-	Groups map[string]GroupTree // Group hierarchy tree
+	Groups map[string]GroupTree
+	Type   string
 }
 
 type PermissionTable struct {
-	Permissions map[string]map[string]map[Permission]map[string]struct{} //Product-->object-->Permission-->Groups
-	IsAdmin     bool
+	Permissions map[string]map[string]map[Permission]map[string]struct{}
 	Bearer      string
-	Groups      []map[string]GroupTree // Group hierarchy tree
-	MemberID    []string               // Member identifier
+	Groups      []map[string]GroupTree
+	MemberID    []string
+	IsAdmin     bool
 }
 
 func NewPermissionTable(jwt interface{}, memberId []string, bearer string, adminGroup string) *PermissionTable {
@@ -88,7 +88,7 @@ func buildPermissions(t *PermissionTable, jwt interface{}, tree *map[string]Grou
 	}
 
 	t.Groups = append(t.Groups, *tree)
-	return
+	//return
 }
 
 // Checks the user Permissions for a specified product and object

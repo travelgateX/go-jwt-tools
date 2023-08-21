@@ -4,4 +4,4 @@ import (
 	"errors"
 )
 
-var ErrInvalidUser = errors.New("Invalid User")
+var ErrInvalidUser = errors.New("invalid User")

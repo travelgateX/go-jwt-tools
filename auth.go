@@ -2,17 +2,18 @@ package authorization
 
 import (
 	"net/http"
+	"regexp"
 
 	"context"
 )
 
 // User is a parsed Authorization header
 type User struct {
-	// AuthorizationValue is the auth header value with which a user was created
-	AuthorizationValue string
-	IsDummy            bool
 	Permissions        Permissions
+	AuthorizationValue string
 	UserID             []string
+	IsDummy            bool
+	TgxMember          bool
 }
 
 // Parser creates a User from an authorization header
@@ -50,6 +51,22 @@ const errMessageNoAuthorizationHeader string = "Authorization header required"
 func UserFromContext(ctx context.Context) (*User, bool) {
 	val, ok := ctx.Value(activeUser).(*User)
 	return val, ok
+}
+
+func IsApikeyFromContext(ctx context.Context) bool {
+	val, _ := ctx.Value(activeUser).(*User)
+	return !isValidEmail(val.UserID[0])
+}
+
+func IsTGXMember(ctx context.Context) bool {
+	val, _ := ctx.Value(activeUser).(*User)
+	return val.TgxMember
+}
+
+func isValidEmail(email string) bool {
+	regex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	pattern := regexp.MustCompile(regex)
+	return pattern.MatchString(email)
 }
 
 // ContextWithUser returns a new `context.Context` that holds a reference to the user `u`

@@ -2,8 +2,9 @@ package jwt
 
 import (
 	"fmt"
-	authorization "github.com/travelgateX/go-jwt-tools"
 	"strings"
+
+	authorization "github.com/travelgateX/go-jwt-tools"
 
 	"github.com/form3tech-oss/jwt-go"
 )
@@ -11,22 +12,22 @@ import (
 var _ authorization.Parser = (*Parser)(nil)
 
 type Parser struct {
-	ParserConfig
+	client  client
 	KeyFunc func(token *jwt.Token) (interface{}, error)
-
-	client client
+	ParserConfig
 }
 
 // ParserConfig is the data required to instance a Parser
 type ParserConfig struct {
+	ClientConfig     *ClientConfig `json:"client_config"`
 	PublicKey        string        `json:"public_key_str"`
 	AdminGroup       string        `json:"admin_group"`
 	DummyToken       string        `json:"dummy_token"`
-	IgnoreExpiration bool          `json:"ignore_expiration"`
 	MemberIDClaim    []string      `json:"member_id_claim"`
 	GroupsClaim      []string      `json:"groups_claim"`
 	FetchNeededClaim []string      `json:"fetch_needed_claim"`
-	ClientConfig     *ClientConfig `json:"client_config"`
+	TGXMemberClaim   []string      `json:"tgx_member_claim"`
+	IgnoreExpiration bool          `json:"ignore_expiration"`
 }
 
 type ClientConfig struct {
@@ -46,8 +47,8 @@ func NewParser(p ParserConfig) *Parser {
 
 	jkf := func(token *jwt.Token) (interface{}, error) {
 		var result interface{}
-		result, _ = jwt.ParseRSAPublicKeyFromPEM([]byte(p.PublicKey))
-		return result, nil
+		result, err := jwt.ParseRSAPublicKeyFromPEM([]byte(p.PublicKey))
+		return result, err
 	}
 	return &Parser{
 		KeyFunc:      jkf,
@@ -92,6 +93,15 @@ func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) 
 func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 	claimsMap := token.Claims.(jwt.MapClaims)
 
+	isTgxMember := false
+	for _, f := range p.TGXMemberClaim {
+		if c, ok := claimsMap[f]; ok {
+			if c.(bool) {
+				isTgxMember = true
+			}
+		}
+	}
+
 	// First of all is checked if the token received in a "fullToken"
 	for _, f := range p.FetchNeededClaim {
 		if c, ok := claimsMap[f]; ok {
@@ -112,6 +122,7 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 
 					// Set the reduced token in the response object
 					user.AuthorizationValue = shortToken
+					user.TgxMember = isTgxMember
 					return user, nil
 				}
 			}
@@ -144,5 +155,6 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		IsDummy:            false,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
 		UserID:             memberIDs,
+		TgxMember:          isTgxMember,
 	}, nil
 }
