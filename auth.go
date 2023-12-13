@@ -11,6 +11,7 @@ import (
 type User struct {
 	Permissions        Permissions
 	AuthorizationValue string
+	Expiration         float64
 	UserID             []string
 	IsDummy            bool
 	TgxMember          bool

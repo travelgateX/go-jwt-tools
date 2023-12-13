@@ -23,6 +23,7 @@ type ParserConfig struct {
 	PublicKey        string        `json:"public_key_str"`
 	AdminGroup       string        `json:"admin_group"`
 	DummyToken       string        `json:"dummy_token"`
+	Expiration       string        `json:"exp"`
 	MemberIDClaim    []string      `json:"member_id_claim"`
 	GroupsClaim      []string      `json:"groups_claim"`
 	FetchNeededClaim []string      `json:"fetch_needed_claim"`
@@ -150,11 +151,14 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		}
 	}
 
+	exp := claimsMap["exp"]
+
 	return &authorization.User{
 		AuthorizationValue: "Bearer " + token.Raw,
 		IsDummy:            false,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
 		UserID:             memberIDs,
 		TgxMember:          isTgxMember,
+		Expiration:         exp.(float64),
 	}, nil
 }
