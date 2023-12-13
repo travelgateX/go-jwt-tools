@@ -168,7 +168,5 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 
 func isExpired(exp float64) bool {
 	expDate := time.Unix(int64(exp), 0)
-	nextWeek := time.Now().AddDate(0, 0, 7)
-
-	return expDate.Before(nextWeek)
+	return expDate.Before(time.Now())
 }
