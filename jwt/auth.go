@@ -3,6 +3,7 @@ package jwt
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	authorization "github.com/travelgateX/go-jwt-tools"
 
@@ -23,6 +24,8 @@ type ParserConfig struct {
 	PublicKey        string        `json:"public_key_str"`
 	AdminGroup       string        `json:"admin_group"`
 	DummyToken       string        `json:"dummy_token"`
+	Expiration       string        `json:"exp"`
+	IsExpired        bool          `json:"is_expired"`
 	MemberIDClaim    []string      `json:"member_id_claim"`
 	GroupsClaim      []string      `json:"groups_claim"`
 	FetchNeededClaim []string      `json:"fetch_needed_claim"`
@@ -150,11 +153,20 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		}
 	}
 
+	exp := claimsMap["exp"]
+
 	return &authorization.User{
 		AuthorizationValue: "Bearer " + token.Raw,
 		IsDummy:            false,
 		Permissions:        NewPermissions(groups, memberIDs, p.AdminGroup),
 		UserID:             memberIDs,
 		TgxMember:          isTgxMember,
+		IsExpired:          isExpired(exp.(float64)),
+		Expiration:         exp.(float64),
 	}, nil
+}
+
+func isExpired(exp float64) bool {
+	expDate := time.Unix(int64(exp), 0)
+	return expDate.Before(time.Now())
 }
