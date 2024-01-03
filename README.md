@@ -8,10 +8,13 @@ These are the important features on this package:
 
 ```go 
 type User struct {
-	AuthorizationValue string
-	IsDummy            bool
 	Permissions        Permissions
+	AuthorizationValue string
 	UserID             []string
+	Orgs               []interface{}
+	Expiration         float64
+	IsExpired          bool
+	IsDummy            bool
 	TgxMember          bool
 }
 
@@ -63,15 +66,18 @@ The jwt parser can be instantiated from:
 
 ```go
 type ParserConfig struct {
-	ClientConfig     *ClientConfig 
-	PublicKey        string        
-	AdminGroup       string        
-	DummyToken       string        
-	MemberIDClaim    []string      
-	GroupsClaim      []string      
-	FetchNeededClaim []string      
-	TGXMemberClaim   []string      
-	IgnoreExpiration bool          
+	ClientConfig       *ClientConfig `json:"client_config"`
+	PublicKey          string        `json:"public_key_str"`
+	AdminGroup         string        `json:"admin_group"`
+	DummyToken         string        `json:"dummy_token"`
+	Expiration         string        `json:"exp"`
+	IsExpired          bool          `json:"is_expired"`
+	MemberIDClaim      []string      `json:"member_id_claim"`
+	GroupsClaim        []string      `json:"groups_claim"`
+	FetchNeededClaim   []string      `json:"fetch_needed_claim"`
+	TGXMemberClaim     []string      `json:"tgx_member_claim"`
+	OrganizationsClaim []string      `json:"organizations_claim"`
+	IgnoreExpiration   bool          `json:"ignore_expiration"`
 }
 ```
 
@@ -91,6 +97,11 @@ jwtParserConfig := jwt.ParserConfig{
 		IgnoreExpiration: false,
 		GroupsClaim:      []string{"https://xtg.com/iam", "https://travelgatex.com/iam"},
 		MemberIDClaim:    []string{"https://xtg.com/member_id", "https://travelgatex.com/member_id"},
+		IgnoreExpiration:   false,
+		ClientConfig:       &jwt.ClientConfig{FetcherURL: string(authFetcherURL.Data)},
+		FetchNeededClaim:   []string{"https://xtg.com/fetch_needed", "https://travelgatex.com/fetch_needed"},
+		TGXMemberClaim:     []string{"https://xtg.com/is_tgx", "https://travelgatex.com/is_tgx"},
+		OrganizationsClaim: []string{"https://xtg.com/org", "https://travelgatex.com/org"},
 	}
 
 jwtParser := jwt.NewParser(jwtParserConfig)

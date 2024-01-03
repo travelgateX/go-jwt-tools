@@ -11,9 +11,10 @@ import (
 type User struct {
 	Permissions        Permissions
 	AuthorizationValue string
-	IsExpired          bool
-	Expiration         float64
 	UserID             []string
+	Orgs               []interface{}
+	Expiration         float64
+	IsExpired          bool
 	IsDummy            bool
 	TgxMember          bool
 }
@@ -63,6 +64,11 @@ func IsApikeyFromContext(ctx context.Context) bool {
 func IsTGXMember(ctx context.Context) bool {
 	val, _ := ctx.Value(activeUser).(*User)
 	return val.TgxMember
+}
+
+func GetOrgs(ctx context.Context) []interface{} {
+	val, _ := ctx.Value(activeUser).(*User)
+	return val.Orgs
 }
 
 func isValidEmail(email string) bool {

@@ -20,17 +20,18 @@ type Parser struct {
 
 // ParserConfig is the data required to instance a Parser
 type ParserConfig struct {
-	ClientConfig     *ClientConfig `json:"client_config"`
-	PublicKey        string        `json:"public_key_str"`
-	AdminGroup       string        `json:"admin_group"`
-	DummyToken       string        `json:"dummy_token"`
-	Expiration       string        `json:"exp"`
-	IsExpired        bool          `json:"is_expired"`
-	MemberIDClaim    []string      `json:"member_id_claim"`
-	GroupsClaim      []string      `json:"groups_claim"`
-	FetchNeededClaim []string      `json:"fetch_needed_claim"`
-	TGXMemberClaim   []string      `json:"tgx_member_claim"`
-	IgnoreExpiration bool          `json:"ignore_expiration"`
+	ClientConfig       *ClientConfig `json:"client_config"`
+	PublicKey          string        `json:"public_key_str"`
+	AdminGroup         string        `json:"admin_group"`
+	DummyToken         string        `json:"dummy_token"`
+	Expiration         string        `json:"exp"`
+	IsExpired          bool          `json:"is_expired"`
+	MemberIDClaim      []string      `json:"member_id_claim"`
+	GroupsClaim        []string      `json:"groups_claim"`
+	FetchNeededClaim   []string      `json:"fetch_needed_claim"`
+	TGXMemberClaim     []string      `json:"tgx_member_claim"`
+	OrganizationsClaim []string      `json:"organizations_claim"`
+	IgnoreExpiration   bool          `json:"ignore_expiration"`
 }
 
 type ClientConfig struct {
@@ -140,9 +141,6 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 			groups = append(groups, c)
 		}
 	}
-	//if len(groups) == 0 {
-	//	return nil, fmt.Errorf("Your token doesn't contain any group")
-	//}
 
 	memberIDs := make([]string, 0, len(p.MemberIDClaim))
 	for _, m := range p.MemberIDClaim {
@@ -150,6 +148,13 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 			if mID, ok := c.(string); ok {
 				memberIDs = append(memberIDs, mID)
 			}
+		}
+	}
+
+	organizations := make([]interface{}, 0, len(p.OrganizationsClaim))
+	for _, g := range p.OrganizationsClaim {
+		if c, ok := claimsMap[g]; ok {
+			organizations = append(organizations, c)
 		}
 	}
 
@@ -163,6 +168,7 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		TgxMember:          isTgxMember,
 		IsExpired:          isExpired(exp.(float64)),
 		Expiration:         exp.(float64),
+		Orgs:               organizations,
 	}, nil
 }
 
