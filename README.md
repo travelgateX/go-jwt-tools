@@ -78,6 +78,7 @@ type ParserConfig struct {
 	TGXMemberClaim     []string      `json:"tgx_member_claim"`
 	OrganizationsClaim []string      `json:"organizations_claim"`
 	IgnoreExpiration   bool          `json:"ignore_expiration"`
+	DisableFetchNeeded bool          `json:"disable_fetch_needed"`
 }
 ```
 
