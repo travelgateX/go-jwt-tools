@@ -107,7 +107,7 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		}
 	}
 
-	if p.DisableFetchNeeded {
+	if !p.DisableFetchNeeded {
 
 		// First of all is checked if the token received in a "fullToken"
 		for _, f := range p.FetchNeededClaim {
