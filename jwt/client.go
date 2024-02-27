@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -30,12 +31,17 @@ func newClient(url string) client {
 
 // GetBearer returns user bearer
 func (a *fetcherClient) GetBearer(userID, authHeader string) (string, error) {
-	req, err := http.NewRequest("GET", a.url, nil)
+
+	query := `{"query": "{ admin { jwt } }"}`
+
+	req, err := http.NewRequest("POST", a.url, bytes.NewBuffer([]byte(query)))
 	if err != nil {
 		return "", err
 	}
 
 	req.Header.Add("Authorization", authHeader)
+	req.Header.Add("Content-Type", "application/json")
+
 	res, err := a.cli.Do(req)
 	if err != nil {
 		return "", err
@@ -47,14 +53,19 @@ func (a *fetcherClient) GetBearer(userID, authHeader string) (string, error) {
 		return "", err
 	}
 
-	resJSON := GetBearerResponseStruct{}
-	err = json.Unmarshal(body, &resJSON)
+	var response struct {
+		Data   map[string]map[string]string `json:"data"`
+		Errors []map[string]interface{}     `json:"errors,omitempty"`
+	}
+
+	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return "", err
 	}
 
-	if resJSON.ErrorDescription != "" {
-		return "", fmt.Errorf("error fetching permissions data: %v", resJSON.ErrorDescription)
+	if len(response.Errors) > 0 {
+		return "", fmt.Errorf("error fetching permissions data: %v", response.Errors)
 	}
-	return resJSON.Token, nil
+
+	return response.Data["admin"]["jwt"], nil
 }

@@ -32,6 +32,7 @@ type ParserConfig struct {
 	TGXMemberClaim     []string      `json:"tgx_member_claim"`
 	OrganizationsClaim []string      `json:"organizations_claim"`
 	IgnoreExpiration   bool          `json:"ignore_expiration"`
+	DisableFetchNeeded bool          `json:"disable_fetch_needed"`
 }
 
 type ClientConfig struct {
@@ -85,7 +86,7 @@ func (p *Parser) Parse(authorizationHeader string) (*authorization.User, error) 
 		message := fmt.Sprintf("Expected %s signing method but token specified %s",
 			jwt.SigningMethodRS256.Alg(),
 			token.Header["alg"])
-		return nil, fmt.Errorf("Error validating token algorithm: %s", message)
+		return nil, fmt.Errorf("error validating token algorithm: %s", message)
 	}
 	// check if the parsed token is valid...
 	if !token.Valid {
@@ -106,28 +107,31 @@ func (p *Parser) createUser(token *jwt.Token) (*authorization.User, error) {
 		}
 	}
 
-	// First of all is checked if the token received in a "fullToken"
-	for _, f := range p.FetchNeededClaim {
-		if c, ok := claimsMap[f]; ok {
-			if c.(bool) {
-				if p.client != nil {
-					// Get the client's "fullToken"
-					shortToken := "Bearer " + token.Raw
-					fullBearer, err := p.client.GetBearer("", shortToken)
-					if err != nil {
-						return nil, err
-					}
+	if p.DisableFetchNeeded {
 
-					// Do Parse(), recursive call with the new authorization token
-					user, err := p.Parse("Bearer " + fullBearer)
-					if err != nil {
-						return nil, err
-					}
+		// First of all is checked if the token received in a "fullToken"
+		for _, f := range p.FetchNeededClaim {
+			if c, ok := claimsMap[f]; ok {
+				if c.(bool) {
+					if p.client != nil {
+						// Get the client's "fullToken"
+						shortToken := "Bearer " + token.Raw
+						fullBearer, err := p.client.GetBearer("", shortToken)
+						if err != nil {
+							return nil, err
+						}
 
-					// Set the reduced token in the response object
-					user.AuthorizationValue = shortToken
-					user.TgxMember = isTgxMember
-					return user, nil
+						// Do Parse(), recursive call with the new authorization token
+						user, err := p.Parse("Bearer " + fullBearer)
+						if err != nil {
+							return nil, err
+						}
+
+						// Set the reduced token in the response object
+						user.AuthorizationValue = shortToken
+						user.TgxMember = isTgxMember
+						return user, nil
+					}
 				}
 			}
 		}
