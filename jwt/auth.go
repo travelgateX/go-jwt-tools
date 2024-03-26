@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	authorization "go-jwt-tools"
+	authorization "github.com/travelgateX/go-jwt-tools"
 
 	"github.com/form3tech-oss/jwt-go"
 )
