@@ -66,9 +66,25 @@ func IsTGXMember(ctx context.Context) bool {
 	return val.TgxMember
 }
 
-func GetOrgs(ctx context.Context) []interface{} {
-	val, _ := ctx.Value(activeUser).(*User)
-	return val.Orgs
+func GetOrgs(ctx context.Context, role Role) []string {
+	user, _ := ctx.Value(activeUser).(*User)
+	orgCodes := []string{}
+
+	for _, org := range user.Orgs {
+		if orgMap, ok := org.(map[string]interface{}); ok {
+			orgRole := VIEWER
+			if orgString, ok := orgMap["r"].(string); ok {
+				orgRole = GetRoleFromString(orgString)
+			}
+			if orgRole >= role {
+				if orgName, ok := orgMap["o"].(string); ok {
+					orgCodes = append(orgCodes, orgName)
+				}
+			}
+
+		}
+	}
+	return orgCodes
 }
 
 func isValidEmail(email string) bool {
