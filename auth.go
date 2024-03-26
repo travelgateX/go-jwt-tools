@@ -74,7 +74,11 @@ func GetOrgs(ctx context.Context, role Role) []string {
 func (u User) GetOrgs(role Role) []string {
 	orgCodes := []string{}
 
-	for _, org := range u.Orgs {
+	if len(u.Orgs) == 0 {
+		return orgCodes
+	}
+	for _, org := range u.Orgs[0].([]interface{}) {
+
 		if orgMap, ok := org.(map[string]interface{}); ok {
 			orgRole := VIEWER
 			if orgString, ok := orgMap["r"].(string); ok {
