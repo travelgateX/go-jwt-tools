@@ -254,27 +254,27 @@ func TestContextCopyUser(t *testing.T) {
 }
 
 func TestGetOrgs(t *testing.T) {
-	user := &User{
+	user := User{
 		Orgs: []interface{}{
-			map[string]interface{}{
-				"o": "org1",
-				"r": "OWNER",
-			},
-			map[string]interface{}{
-				"o": "org2",
-				"r": "ADMIN",
-			},
-			map[string]interface{}{
-				"o": "org3",
-				"r": "EDITOR",
-			},
-			map[string]interface{}{
-				"o": "org4",
+			[]interface{}{
+				map[string]interface{}{
+					"o": "org1",
+					"r": "OWNER",
+				},
+				map[string]interface{}{
+					"o": "org2",
+					"r": "ADMIN",
+				},
+				map[string]interface{}{
+					"o": "org3",
+					"r": "EDITOR",
+				},
+				map[string]interface{}{
+					"o": "org4",
+				},
 			},
 		},
 	}
-
-	ctx := context.WithValue(context.Background(), activeUser, user)
 
 	tests := []struct {
 		name     string
@@ -305,7 +305,7 @@ func TestGetOrgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := GetOrgs(ctx, tt.role)
+			actual := user.GetOrgs(tt.role)
 			if !reflect.DeepEqual(actual, tt.expected) {
 				t.Errorf("Test %q failed: expected %v, got %v", tt.name, tt.expected, actual)
 			}
