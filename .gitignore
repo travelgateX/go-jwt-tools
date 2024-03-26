@@ -2,9 +2,7 @@
 *.exe
 *.dll
 *.so
-*.dylib
-go.mod
-go.sum
+*.dylib 
 
 # Test binary, build with `go test -c`
 *.test
