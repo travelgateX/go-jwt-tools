@@ -1,7 +1,7 @@
 package cache
 
 import (
-	authorization "go-jwt-tools"
+	authorization "github.com/travelgateX/go-jwt-tools"
 
 	"github.com/travelgateX/go-cache/cache"
 )
