@@ -68,9 +68,13 @@ func IsTGXMember(ctx context.Context) bool {
 
 func GetOrgs(ctx context.Context, role Role) []string {
 	user, _ := ctx.Value(activeUser).(*User)
+	return user.GetOrgs(role)
+}
+
+func (u User) GetOrgs(role Role) []string {
 	orgCodes := []string{}
 
-	for _, org := range user.Orgs {
+	for _, org := range u.Orgs {
 		if orgMap, ok := org.(map[string]interface{}); ok {
 			orgRole := VIEWER
 			if orgString, ok := orgMap["r"].(string); ok {

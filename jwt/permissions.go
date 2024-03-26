@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	authorization "github.com/travelgateX/go-jwt-tools"
+	authorization "go-jwt-tools"
 )
 
 const (
