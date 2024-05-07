@@ -114,25 +114,33 @@ func extractOrgInfo(org interface{}, service *Service) (Role, string) {
 	}
 	return VIEWER, ""
 }
-
 func getServiceRole(inputService Service, orgMap map[string]interface{}, orgRole Role) Role {
-	if servicesMap, ok := orgMap["s"].([]interface{}); ok {
-		for _, serviceInt := range servicesMap {
-			if serviceMap, ok := serviceInt.(map[string]interface{}); ok {
-				if service, ok := serviceMap["c"].(string); ok {
-					if GetServiceFromString(service) == inputService {
-						if serviceRoleStr, ok := serviceMap["r"].(string); ok {
-							serviceRole := GetRoleFromString(serviceRoleStr)
-							if orgRole < serviceRole {
-								orgRole = serviceRole
-								break
-							}
-						}
-					}
-				}
-			}
+	services, ok := orgMap["s"].([]interface{})
+	if !ok {
+		return orgRole
+	}
+
+	for _, serviceInt := range services {
+		serviceMap, ok := serviceInt.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		if service, ok := serviceMap["c"].(string); !ok || GetServiceFromString(service) != inputService {
+			continue
+		}
+
+		serviceRoleStr, ok := serviceMap["r"].(string)
+		if !ok {
+			continue
+		}
+
+		serviceRole := GetRoleFromString(serviceRoleStr)
+		if orgRole < serviceRole {
+			return serviceRole
 		}
 	}
+
 	return orgRole
 }
 
