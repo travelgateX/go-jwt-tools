@@ -68,7 +68,6 @@ func IsTGXMember(ctx context.Context) bool {
 
 func GetOrgsServiceFilter(ctx context.Context, role Role, service Service) []string {
 	user, _ := ctx.Value(activeUser).(*User)
-
 	return user.GetOrgsServiceFilter(role, &service)
 }
 
@@ -76,8 +75,8 @@ func GetOrgs(ctx context.Context, role Role) []string {
 	user, _ := ctx.Value(activeUser).(*User)
 	return user.GetOrgs(role)
 }
-func (u User) GetOrgs(role Role) []string {
 
+func (u User) GetOrgs(role Role) []string {
 	return u.GetOrgsServiceFilter(role, nil)
 }
 
@@ -120,7 +119,6 @@ func getServiceRole(inputService Service, orgMap map[string]interface{}, orgRole
 	if servicesMap, ok := orgMap["s"].([]interface{}); ok {
 		for _, serviceInt := range servicesMap {
 			if serviceMap, ok := serviceInt.(map[string]interface{}); ok {
-
 				if service, ok := serviceMap["c"].(string); ok {
 					if GetServiceFromString(service) == inputService {
 						if serviceRoleStr, ok := serviceMap["r"].(string); ok {
@@ -133,7 +131,6 @@ func getServiceRole(inputService Service, orgMap map[string]interface{}, orgRole
 					}
 				}
 			}
-
 		}
 	}
 	return orgRole
