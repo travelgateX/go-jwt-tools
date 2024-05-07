@@ -9,6 +9,15 @@ const (
 	OWNER  Role = 3
 )
 
+type Service string
+
+const (
+	ENTITIES Service = "ENTITIES"
+	BILLING  Service = "BILLING"
+	HOTELX   Service = "HOTELX"
+	UNKNOWN  Service = "UNKNOWN"
+)
+
 func GetRoleFromString(role string) Role {
 	switch role {
 	case "OWNER":
@@ -19,5 +28,18 @@ func GetRoleFromString(role string) Role {
 		return EDITOR
 	default:
 		return VIEWER
+	}
+}
+
+func GetServiceFromString(service string) Service {
+	switch service {
+	case "ENTITIES":
+		return ENTITIES
+	case "BILLING":
+		return BILLING
+	case "HOTELX":
+		return HOTELX
+	default:
+		return UNKNOWN
 	}
 }

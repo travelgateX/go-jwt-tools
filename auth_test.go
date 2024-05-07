@@ -254,12 +254,19 @@ func TestContextCopyUser(t *testing.T) {
 }
 
 func TestGetOrgs(t *testing.T) {
+
+	entitiesService := ENTITIES
+
 	user := User{
 		Orgs: []interface{}{
 			[]interface{}{
 				map[string]interface{}{
 					"o": "org1",
 					"r": "OWNER",
+					"s": []interface{}{map[string]interface{}{
+						"c": "ENTITIES",
+						"r": "ADMIN",
+					}},
 				},
 				map[string]interface{}{
 					"o": "org2",
@@ -272,6 +279,22 @@ func TestGetOrgs(t *testing.T) {
 				map[string]interface{}{
 					"o": "org4",
 				},
+				map[string]interface{}{
+					"o": "org5",
+					"r": "VIEWER",
+					"s": []interface{}{map[string]interface{}{
+						"c": "ENTITIES",
+						"r": "ADMIN",
+					}},
+				},
+				map[string]interface{}{
+					"o": "org6",
+					"r": "VIEWER",
+					"s": []interface{}{map[string]interface{}{
+						"c": "ENTITIES",
+						"r": "EDITOR",
+					}},
+				},
 			},
 		},
 	}
@@ -279,33 +302,38 @@ func TestGetOrgs(t *testing.T) {
 	tests := []struct {
 		name     string
 		role     Role
+		service  *Service
 		expected []string
 	}{
 		{
 			name:     "Test OWNER role",
 			role:     OWNER,
+			service:  nil,
 			expected: []string{"org1"},
 		},
 		{
 			name:     "Test ADMIN role",
 			role:     ADMIN,
-			expected: []string{"org1", "org2"},
+			service:  &entitiesService,
+			expected: []string{"org1", "org2", "org5"},
 		},
 		{
 			name:     "Test EDITOR role",
 			role:     EDITOR,
-			expected: []string{"org1", "org2", "org3"},
+			service:  &entitiesService,
+			expected: []string{"org1", "org2", "org3", "org5", "org6"},
 		},
 		{
 			name:     "Test VIEWER role",
 			role:     VIEWER,
-			expected: []string{"org1", "org2", "org3", "org4"},
+			service:  nil,
+			expected: []string{"org1", "org2", "org3", "org4", "org5", "org6"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := user.GetOrgs(tt.role)
+			actual := user.GetOrgsServiceFilter(tt.role, tt.service)
 			if !reflect.DeepEqual(actual, tt.expected) {
 				t.Errorf("Test %q failed: expected %v, got %v", tt.name, tt.expected, actual)
 			}

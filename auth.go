@@ -66,33 +66,82 @@ func IsTGXMember(ctx context.Context) bool {
 	return val.TgxMember
 }
 
+func GetOrgsServiceFilter(ctx context.Context, role Role, service Service) []string {
+	user, _ := ctx.Value(activeUser).(*User)
+	return user.GetOrgsServiceFilter(role, &service)
+}
+
 func GetOrgs(ctx context.Context, role Role) []string {
 	user, _ := ctx.Value(activeUser).(*User)
 	return user.GetOrgs(role)
 }
 
 func (u User) GetOrgs(role Role) []string {
+	return u.GetOrgsServiceFilter(role, nil)
+}
+
+func (u User) GetOrgsServiceFilter(role Role, service *Service) []string {
 	orgCodes := []string{}
 
 	if len(u.Orgs) == 0 {
 		return orgCodes
 	}
+
 	for _, org := range u.Orgs[0].([]interface{}) {
+		orgRole, orgName := extractOrgInfo(org, service)
 
-		if orgMap, ok := org.(map[string]interface{}); ok {
-			orgRole := VIEWER
-			if orgString, ok := orgMap["r"].(string); ok {
-				orgRole = GetRoleFromString(orgString)
+		if orgRole >= role {
+			if orgName != "" {
+				orgCodes = append(orgCodes, orgName)
 			}
-			if orgRole >= role {
-				if orgName, ok := orgMap["o"].(string); ok {
-					orgCodes = append(orgCodes, orgName)
-				}
-			}
-
 		}
 	}
 	return orgCodes
+}
+
+func extractOrgInfo(org interface{}, service *Service) (Role, string) {
+	if orgMap, ok := org.(map[string]interface{}); ok {
+		orgRole := VIEWER
+		if orgString, ok := orgMap["r"].(string); ok {
+			orgRole = GetRoleFromString(orgString)
+		}
+		if service != nil {
+			orgRole = getServiceRole(*service, orgMap, orgRole)
+		}
+		if orgName, ok := orgMap["o"].(string); ok {
+			return orgRole, orgName
+		}
+	}
+	return VIEWER, ""
+}
+func getServiceRole(inputService Service, orgMap map[string]interface{}, orgRole Role) Role {
+	services, ok := orgMap["s"].([]interface{})
+	if !ok {
+		return orgRole
+	}
+
+	for _, serviceInt := range services {
+		serviceMap, ok := serviceInt.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		if service, ok := serviceMap["c"].(string); !ok || GetServiceFromString(service) != inputService {
+			continue
+		}
+
+		serviceRoleStr, ok := serviceMap["r"].(string)
+		if !ok {
+			continue
+		}
+
+		serviceRole := GetRoleFromString(serviceRoleStr)
+		if orgRole < serviceRole {
+			return serviceRole
+		}
+	}
+
+	return orgRole
 }
 
 func isValidEmail(email string) bool {
