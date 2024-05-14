@@ -253,6 +253,114 @@ func TestContextCopyUser(t *testing.T) {
 	assert.Same(t, user, bgUser)
 }
 
+func TestTGXUser(t *testing.T) {
+
+	entitiesService := ENTITIES
+
+	tgx_admin_service_admin := User{
+		TgxMember: true,
+		Orgs: []interface{}{
+			[]interface{}{
+				map[string]interface{}{
+					"o": "tgx",
+					"r": "ADMIN",
+					"s": []interface{}{map[string]interface{}{
+						"c": "ENTITIES",
+						"r": "ADMIN",
+					}},
+				},
+			},
+		},
+	}
+
+	tgx_viewer_service_admin := User{
+		TgxMember: true,
+		Orgs: []interface{}{
+			[]interface{}{
+				map[string]interface{}{
+					"o": "tgx",
+					"r": "VIEWER",
+					"s": []interface{}{map[string]interface{}{
+						"c": "ENTITIES",
+						"r": "ADMIN",
+					}},
+				},
+			},
+		},
+	}
+
+	tgx_viewer_service_viewer := User{
+		TgxMember: true,
+		Orgs: []interface{}{
+			[]interface{}{
+				map[string]interface{}{
+					"o": "tgx",
+					"r": "VIEWER",
+					"s": []interface{}{map[string]interface{}{
+						"c": "ENTITIES",
+						"r": "VIEWER",
+					}},
+				},
+			},
+		},
+	}
+
+	tgx_viewer := User{
+		TgxMember: true,
+		Orgs: []interface{}{
+			[]interface{}{
+				map[string]interface{}{
+					"o": "tgx",
+					"r": "VIEWER",
+				},
+			},
+		},
+	}
+
+	tgx_admin := User{
+		TgxMember: true,
+		Orgs: []interface{}{
+			[]interface{}{
+				map[string]interface{}{
+					"o": "tgx",
+					"r": "ADMIN",
+				},
+			},
+		},
+	}
+
+	no_tgx_admin := User{
+		TgxMember: false,
+		Orgs: []interface{}{
+			[]interface{}{
+				map[string]interface{}{
+					"o": "org1",
+					"r": "ADMIN",
+				},
+			},
+		},
+	}
+
+	if no_tgx_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
+		t.Errorf("Test no_tgx_admin failed: expected no tgx member")
+	}
+	if !tgx_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
+		t.Errorf("Test tgx_admin failed: expected tgx member")
+	}
+	if tgx_viewer.IsTGXMemberRole(ADMIN, &entitiesService) {
+		t.Errorf("Test tgx_viewer failed: expected no tgx member admin")
+	}
+	if tgx_viewer_service_viewer.IsTGXMemberRole(ADMIN, &entitiesService) {
+		t.Errorf("tgx_viewer_service_viewer tgx_viewer failed: expected no tgx member admin")
+	}
+	if !tgx_viewer_service_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
+		t.Errorf("Test tgx_viewer_service_admin failed: expected tgx member admin")
+	}
+	if !tgx_admin_service_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
+		t.Errorf("Test tgx_admin_service_admin failed: expected tgx member admin")
+	}
+
+}
 func TestGetOrgs(t *testing.T) {
 
 	entitiesService := ENTITIES
