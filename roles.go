@@ -18,6 +18,8 @@ const (
 	UNKNOWN  Service = "UNKNOWN"
 )
 
+const ORG_TGX = "tgx"
+
 func GetRoleFromString(role string) Role {
 	switch role {
 	case "OWNER":

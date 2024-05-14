@@ -99,6 +99,28 @@ func (u User) GetOrgsServiceFilter(role Role, service *Service) []string {
 	return orgCodes
 }
 
+func IsTGXMemberByRole(ctx context.Context, role Role, service *Service) bool {
+
+	user, _ := ctx.Value(activeUser).(*User)
+	return user.IsTGXMemberByRole(role, service)
+
+}
+func (u User) IsTGXMemberByRole(role Role, service *Service) bool {
+	if !u.TgxMember {
+		return false
+	}
+
+	for _, org := range u.Orgs[0].([]interface{}) {
+		orgRole, orgName := extractOrgInfo(org, service)
+
+		if orgName == ORG_TGX && orgRole >= role {
+			return true
+		}
+	}
+
+	return false
+}
+
 func extractOrgInfo(org interface{}, service *Service) (Role, string) {
 	if orgMap, ok := org.(map[string]interface{}); ok {
 		orgRole := VIEWER
