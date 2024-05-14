@@ -63,9 +63,12 @@ func IsApikeyFromContext(ctx context.Context) bool {
 
 func IsTGXMember(ctx context.Context) bool {
 	val, _ := ctx.Value(activeUser).(*User)
-	return val.TgxMember
+	return val.IsTGXMember()
 }
 
+func (u User) IsTGXMember() bool {
+	return u.TgxMember
+}
 func GetOrgsServiceFilter(ctx context.Context, role Role, service Service) []string {
 	user, _ := ctx.Value(activeUser).(*User)
 	return user.GetOrgsServiceFilter(role, &service)
@@ -106,7 +109,7 @@ func IsTGXMemberRole(ctx context.Context, role Role, service *Service) bool {
 
 }
 func (u User) IsTGXMemberRole(role Role, service *Service) bool {
-	if !u.TgxMember {
+	if !u.IsTGXMember() {
 		return false
 	}
 
