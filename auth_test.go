@@ -341,22 +341,22 @@ func TestTGXUser(t *testing.T) {
 		},
 	}
 
-	if no_tgx_admin.IsTGXMemberByRole(ADMIN, &entitiesService) {
+	if no_tgx_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
 		t.Errorf("Test no_tgx_admin failed: expected no tgx member")
 	}
-	if !tgx_admin.IsTGXMemberByRole(ADMIN, &entitiesService) {
+	if !tgx_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
 		t.Errorf("Test tgx_admin failed: expected tgx member")
 	}
-	if tgx_viewer.IsTGXMemberByRole(ADMIN, &entitiesService) {
+	if tgx_viewer.IsTGXMemberRole(ADMIN, &entitiesService) {
 		t.Errorf("Test tgx_viewer failed: expected no tgx member admin")
 	}
-	if tgx_viewer_service_viewer.IsTGXMemberByRole(ADMIN, &entitiesService) {
+	if tgx_viewer_service_viewer.IsTGXMemberRole(ADMIN, &entitiesService) {
 		t.Errorf("tgx_viewer_service_viewer tgx_viewer failed: expected no tgx member admin")
 	}
-	if !tgx_viewer_service_admin.IsTGXMemberByRole(ADMIN, &entitiesService) {
+	if !tgx_viewer_service_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
 		t.Errorf("Test tgx_viewer_service_admin failed: expected tgx member admin")
 	}
-	if !tgx_admin_service_admin.IsTGXMemberByRole(ADMIN, &entitiesService) {
+	if !tgx_admin_service_admin.IsTGXMemberRole(ADMIN, &entitiesService) {
 		t.Errorf("Test tgx_admin_service_admin failed: expected tgx member admin")
 	}
 

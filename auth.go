@@ -99,13 +99,13 @@ func (u User) GetOrgsServiceFilter(role Role, service *Service) []string {
 	return orgCodes
 }
 
-func IsTGXMemberByRole(ctx context.Context, role Role, service *Service) bool {
+func IsTGXMemberRole(ctx context.Context, role Role, service *Service) bool {
 
 	user, _ := ctx.Value(activeUser).(*User)
-	return user.IsTGXMemberByRole(role, service)
+	return user.IsTGXMemberRole(role, service)
 
 }
-func (u User) IsTGXMemberByRole(role Role, service *Service) bool {
+func (u User) IsTGXMemberRole(role Role, service *Service) bool {
 	if !u.TgxMember {
 		return false
 	}
