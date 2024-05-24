@@ -74,6 +74,14 @@ func GetOrgsServiceFilter(ctx context.Context, role Role, service Service) []str
 	return user.GetOrgsServiceFilter(role, &service)
 }
 
+func HasRoleInOrg(ctx context.Context, org string, role Role, service *Service) bool {
+	user, _ := ctx.Value(activeUser).(*User)
+	orgsBearer := user.GetOrgsServiceFilter(role, service)
+
+	return Contains(orgsBearer, org)
+
+}
+
 func GetOrgs(ctx context.Context, role Role) []string {
 	user, _ := ctx.Value(activeUser).(*User)
 	return user.GetOrgs(role)
@@ -187,6 +195,15 @@ func ContextCopyUser(parent, background context.Context) context.Context {
 		background = ContextWithUser(background, u)
 	}
 	return background
+}
+
+func Contains(a []string, e string) bool {
+	for _, x := range a {
+		if x == e {
+			return true
+		}
+	}
+	return false
 }
 
 type contextKey struct{}
